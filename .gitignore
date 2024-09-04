@@ -1,3 +1,4 @@
-/src/main.exe
+src/main.exe
 .vscode/settings.json
 .vscode/tasks.json
+build/
