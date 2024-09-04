@@ -18,12 +18,15 @@ szl::Variable szl::Scope::findVar(const std::string &name)
 
 szl::Scope::~Scope()
 {
-    for (const auto &variable : variables)
+    for (auto variable = variables.begin(); variable != variables.end(); variable++)
     {
-        for (int i = 0; i < variable.second.getStackSize(); i += 2)
+        if ((*variable).first == "[REGSAVE]")
+            continue;
+        for (int i = 0; i < (*variable).second.getStackSize(); i += 2)
         {
             code->insert("POP BC\n");
         }
+        variables.erase(variable);
     }
     szl::restoreRegisters(*code, *this);
 }
