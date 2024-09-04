@@ -5,6 +5,9 @@ include_directories(src/)
 
 add_executable(Simple-Z-Language 
 src/main.cpp
+src/Scope/Scope.cpp
 src/Variable/Variable.cpp
+src/Code/Code.cpp
 src/SZLException/SZLException.cpp
+src/CommonFunctions/CommonFunctions.cpp
 )
