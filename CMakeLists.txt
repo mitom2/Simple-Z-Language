@@ -10,4 +10,13 @@ src/Variable/Variable.cpp
 src/Code/Code.cpp
 src/SZLException/SZLException.cpp
 src/CommonFunctions/CommonFunctions.cpp
+src/Compiler/Compiler.cpp
+src/Rules/Rule.cpp
+src/Rules/RuleWhitespace.cpp
+src/Rules/RuleComment.cpp
+src/Rules/RuleLiteral.cpp
+src/Rules/RuleBracket.cpp
+src/Rules/RulePunctuation.cpp
+src/Rules/RuleKeyword.cpp
+src/Rules/RuleIdentifier.cpp
 )

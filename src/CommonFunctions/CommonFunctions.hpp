@@ -7,6 +7,8 @@
 namespace szl
 {
 
+    class Scope;
+
     void storeRegisters(szl::Code &code, szl::Scope &scope, bool storeAlternate = true);
 
     void restoreRegisters(szl::Code &code, szl::Scope &scope);

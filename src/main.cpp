@@ -1,8 +1,8 @@
 #include <iostream>
-#include "Scope/Scope.hpp"
+#include "Compiler/Compiler.hpp"
 
 int main()
 {
-    Scope s;
+    szl::compile("def.szl", "def.ia");
     return 0;
 }

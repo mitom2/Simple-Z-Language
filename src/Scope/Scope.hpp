@@ -20,13 +20,23 @@ namespace szl
     public:
         Scope(Code *code, Scope *parent = nullptr);
 
-        szl::Variable findVar(const std::string &name);
+        szl::Variable operator[](const std::string &name);
 
         szl::Variable *getStackHead() const { return stackHead; }
 
         std::unordered_map<std::string, szl::Variable> &getVariables() { return variables; }
 
         Scope *getParent() const { return parent; }
+
+        void insertVariable(const std::string &name, szl::Variable &var);
+
+        void insertVariable(const std::string &name, int offset, int size);
+
+        int getHeadOffset() const;
+
+        int getNextOffset(const int nextSize) const;
+
+        int getStackSize() const;
 
         ~Scope();
     };

@@ -35,7 +35,7 @@
     POP AF
     RET
 
-@szl_macro_restore_all_registers
+@stdszllib_restore_all_registers
     POP IY
     POP IX
     EX AF,AF'

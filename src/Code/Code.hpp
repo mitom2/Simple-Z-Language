@@ -17,7 +17,7 @@ namespace szl
         std::size_t currentPosition;
 
     public:
-        Code(std::vector<CodeLine> newCode = std::vector<CodeLine>()) : code(newCode) {}
+        Code(std::vector<CodeLine> newCode = std::vector<CodeLine>()) : code(newCode), currentPosition(0) {}
 
         void insert(CodeLine line, std::size_t position);
 

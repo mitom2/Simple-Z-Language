@@ -8,11 +8,11 @@ namespace szl
         int offset;
 
     public:
-        Variable(int offset, int size);
+        Variable(const int offset = 0, const int size = 0);
 
         int getStackSize() const { return stackSize; }
         int getOffset() const { return offset; }
-        int getPosition(int maxAddr = 0b1111111111111111) const;
-        int getNextOffset(int nextSize) const;
+        int getPosition(const int maxAddr = 0b1111111111111111) const;
+        int getNextOffset(const int nextSize) const;
     };
 }
