@@ -12,7 +12,7 @@ namespace szl
 
         int getStackSize() const { return stackSize; }
         int getOffset() const { return offset; }
-        int getPosition(const int maxAddr = 0b1111111111111111) const;
+        int getPosition(const int maxAddr = 0x10000) const;
         int getNextOffset(const int nextSize) const;
     };
 }
