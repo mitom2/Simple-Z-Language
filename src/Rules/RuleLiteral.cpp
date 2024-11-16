@@ -22,11 +22,9 @@ bool szl::RuleLiteral::check(const std::string &content, std::size_t position) c
     if (content.substr(position, 5) == "false" && !szl::Rule::isWordCharacter(content[position + 5]))
         return true;
 
-    // Case: negative number
-    if (content[position] == '-')
-    {
-        position++;
-    }
+    // Case: NULL
+    if (content.substr(position, 4) == "NULL" && !szl::Rule::isWordCharacter(content[position + 4]))
+        return true;
 
     // Subcase: decimal number
     if (szl::Rule::isNumberCharacter(content[position]) && (content[position] != '0' || !szl::Rule::isNumberCharacter(content[position + 1])))
@@ -70,14 +68,11 @@ bool szl::RuleLiteral::check(const std::string &content, std::size_t position) c
                             break;
                         }
                     }
-                    else
+                    else if ((content[position + i] < '0' || content[position + i] > '7') && content[position + i] != '.')
                     {
-                        if ((content[position + i] < '0' || content[position + i] > '7') && content[position + i] != '.')
-                        {
-                            if (szl::Rule::isSeparatorCharacter(content[position + i]))
-                                return true;
-                            break;
-                        }
+                        if (szl::Rule::isSeparatorCharacter(content[position + i]))
+                            return true;
+                        break;
                     }
                 }
             }
@@ -119,14 +114,13 @@ szl::Token szl::RuleLiteral::generateToken(const std::string &content, std::size
         return res;
     }
 
-    // Case: negative number
-    if (content[position] == '-')
+    // Case: NULL
+    if (content.substr(position, 4) == "NULL" && !szl::Rule::isWordCharacter(content[position + 4]))
     {
-        res.content = "-";
-        position++;
+        res.content = "NULL";
+        return res;
     }
-    else
-        res.content = "";
+    res.content = "";
 
     // Subcase: decimal number
     if (szl::Rule::isNumberCharacter(content[position]) && (content[position] != '0' || !szl::Rule::isNumberCharacter(content[position + 1])))
@@ -179,17 +173,14 @@ szl::Token szl::RuleLiteral::generateToken(const std::string &content, std::size
                             break;
                         }
                     }
-                    else
+                    else if ((content[position + i] < '0' || content[position + i] > '7') && content[position + i] != '.')
                     {
-                        if ((content[position + i] < '0' || content[position + i] > '7') && content[position + i] != '.')
+                        if (szl::Rule::isSeparatorCharacter(content[position + i]))
                         {
-                            if (szl::Rule::isSeparatorCharacter(content[position + i]))
-                            {
-                                res.content += content.substr(position, i);
-                                return res;
-                            }
-                            break;
+                            res.content += content.substr(position, i);
+                            return res;
                         }
+                        break;
                     }
                 }
             }
