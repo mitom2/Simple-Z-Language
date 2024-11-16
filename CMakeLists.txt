@@ -19,4 +19,5 @@ src/Rules/RuleBracket.cpp
 src/Rules/RulePunctuation.cpp
 src/Rules/RuleKeyword.cpp
 src/Rules/RuleIdentifier.cpp
+src/Grammar/Grammar.cpp
 )
