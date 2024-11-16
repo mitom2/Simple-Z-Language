@@ -1,53 +1,31 @@
 ;This file must be included before compilation at the beginning of the code (just after the initial .org). It contains basic SZL functions used in the program.
 
-@stdszllib_store_basic_registers
+@stdszllib_store_registers
+    EXX
+    POP HL
+    EXX
     PUSH AF
     PUSH BC
     PUSH DE
     PUSH HL
     PUSH IX
     PUSH IY
-    RET
-
-@stdszllib_store_all_registers
-    PUSH AF
-    PUSH BC
-    PUSH DE
+    EXX
     PUSH HL
     EXX
-    EX AF,AF'
-    PUSH AF
-    PUSH BC
-    PUSH DE
-    PUSH HL
-    EXX
-    EX AF,AF'
-    PUSH IX
-    PUSH IY
     RET
 
-@stdszllib_restore_basic_registers
+@stdszllib_restore_registers
+    EXX
+    POP HL
+    EXX
     POP IY
     POP IX
     POP HL
     POP DE
     POP BC
     POP AF
-    RET
-
-@stdszllib_restore_all_registers
-    POP IY
-    POP IX
-    EX AF,AF'
     EXX
-    POP HL
-    POP DE
-    POP BC
-    POP AF
-    EX AF,AF'
+    PUSH HL
     EXX
-    POP HL
-    POP DE
-    POP BC
-    POP AF
     RET
