@@ -54,7 +54,7 @@ int szl::Scope::getHeadOffset() const
 int szl::Scope::getNextOffset(const int nextSize) const
 {
     if (stackHead == nullptr)
-        return parent == nullptr ? 0 : parent->getNextOffset(nextSize);
+        return parent == nullptr ? nextSize : parent->getNextOffset(nextSize);
     return stackHead->getNextOffset(nextSize);
 }
 
@@ -67,16 +67,18 @@ int szl::Scope::getStackSize() const
 
 szl::Scope::~Scope()
 {
-    for (auto variable = variables.begin(); variable != variables.end(); variable++)
+    int offset = 0;
+    for (auto variable = variables.begin(); variable != variables.end();)
     {
         if ((*variable).first == "[REGSAVE]")
-            continue;
-        for (int i = 0; i < (*variable).second.getStackSize(); i += 2)
         {
-            code->insert("POP BC\n");
+            variable++;
+            continue;
         }
-        variables.erase(variable);
+        offset += (*variable).second.getStackSize();
+        variable = variables.erase(variable);
     }
+    stackHead = &operator[]("[REGSAVE]");
     *code += "LD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\n";
     szl::restoreRegisters(*code, *this);
 }
