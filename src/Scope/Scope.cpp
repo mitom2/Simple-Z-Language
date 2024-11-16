@@ -16,10 +16,26 @@ szl::Variable szl::Scope::operator[](const std::string &name)
     return variables[name];
 }
 
+bool szl::Scope::exists(const std::string &name) const
+{
+    if (!variables.count(name))
+    {
+        if (parent == nullptr)
+            return false;
+        return parent->exists(name);
+    }
+    return true;
+}
+
 void szl::Scope::insertVariable(const std::string &name, szl::Variable &var)
 {
     variables[name] = var;
     stackHead = &variables[name];
+}
+
+void szl::Scope::insertVariable(const std::string &name, int size)
+{
+    insertVariable(name, getNextOffset(size), size);
 }
 
 void szl::Scope::insertVariable(const std::string &name, int offset, int size)

@@ -21,6 +21,8 @@ namespace szl
 
         szl::Variable operator[](const std::string &name);
 
+        bool exists(const std::string &name) const;
+
         szl::Variable *getStackHead() const { return stackHead; }
 
         std::unordered_map<std::string, szl::Variable> &getVariables() { return variables; }
@@ -28,6 +30,8 @@ namespace szl
         Scope *getParent() const { return parent; }
 
         void insertVariable(const std::string &name, szl::Variable &var);
+
+        void insertVariable(const std::string &name, int size);
 
         void insertVariable(const std::string &name, int offset, int size);
 
