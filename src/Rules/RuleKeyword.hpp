@@ -12,17 +12,19 @@ namespace szl
     {
         std::unordered_set<std::string> keywords{
             "+", "-", "/", "*",
-            "++", "--",
+            "%",
             "~", "&", "|", "^", "<<", ">>",
             "!", "&&", "||", "^^",
             "=", "+=", "-=", "*=", "/=", "~=", "&=", "|=", "^=",
             "!=", "==", "<", ">", "<=", ">=",
-            "int", "uint", "int16", "uint16", "int32", "uint32",
-            "bool", "float", "char", "string", "array", "list", "map",
+            "int", "uint", "long", "ulong",
+            "bool", "float", "char", "string",
+            "array", "list", "map",
             "struct", "class",
             "if", "for", "while", "?", "?:",
             "inline", "void", "static",
             "in", "out",
+            "lock", "unlock",
             "::",
             "return"};
 
