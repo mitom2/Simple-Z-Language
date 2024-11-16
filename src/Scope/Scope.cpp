@@ -1,6 +1,6 @@
 #include "Scope.hpp"
 
-szl::Scope::Scope(Code *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr)
+szl::Scope::Scope(std::string *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr)
 {
     szl::storeRegisters(*code, *this);
 }
@@ -61,5 +61,6 @@ szl::Scope::~Scope()
         }
         variables.erase(variable);
     }
+    *code += "LD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\n";
     szl::restoreRegisters(*code, *this);
 }

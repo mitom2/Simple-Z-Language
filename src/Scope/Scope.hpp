@@ -2,7 +2,6 @@
 #include <iostream>
 #include <unordered_map>
 #include "Variable/Variable.hpp"
-#include "Code/Code.hpp"
 #include "SZLException/SZLException.hpp"
 #include "CommonFunctions/CommonFunctions.hpp"
 
@@ -15,10 +14,10 @@ namespace szl
         Scope *parent;
         std::unordered_map<std::string, szl::Variable> variables;
         szl::Variable *stackHead;
-        szl::Code *code;
+        std::string *code;
 
     public:
-        Scope(Code *code, Scope *parent = nullptr);
+        Scope(std::string *code, Scope *parent = nullptr);
 
         szl::Variable operator[](const std::string &name);
 
