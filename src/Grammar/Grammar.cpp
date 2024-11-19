@@ -275,7 +275,7 @@ szl::Grammar::Grammar(bool addSubRules)
 {
     if (!addSubRules)
         return;
-    addSubRule(new szl::GrammarBracketsRecursive(true));
+    addSubRule(new szl::GrammarBrackets(true));
     addSubRule(new szl::GrammarSingleVariableDeclaration(true));
     addSubRule(new szl::GrammarSemicolon);
     // TODO
@@ -348,7 +348,7 @@ szl::GrammarSingleVariableDeclaration::GrammarSingleVariableDeclaration(bool add
 {
     if (!addSubRules)
         return;
-    addSubRule(new szl::GrammarBracketsRecursive(true));
+    addSubRule(new szl::GrammarBrackets(true));
     addSubRule(new szl::GrammarTwoLiteralsAddition);
     addSubRule(new szl::GrammarLiteral);
     addSubRule(new szl::GrammarIdentifier);
@@ -493,7 +493,7 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
            partial.substr(0, 16) + "\nLD DE,%" + partial.substr(16, 16) + "\n";
 }
 
-std::string szl::GrammarBracketsRecursive::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
+std::string szl::GrammarBrackets::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
 {
     if (program[position].category != szl::TokenCategory::Bracket)
         return "";
@@ -523,7 +523,7 @@ std::string szl::GrammarBracketsRecursive::execute(std::vector<szl::Token> &prog
     return "";
 }
 
-szl::GrammarBracketsRecursive::GrammarBracketsRecursive(bool addSubRules)
+szl::GrammarBrackets::GrammarBrackets(bool addSubRules)
 {
     if (!addSubRules)
         return;

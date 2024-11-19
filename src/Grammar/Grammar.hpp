@@ -71,12 +71,12 @@ namespace szl
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
     };
 
-    class GrammarBracketsRecursive : public Grammar
+    class GrammarBrackets : public Grammar
     {
     public:
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
 
-        GrammarBracketsRecursive(bool addSubRules = false);
+        GrammarBrackets(bool addSubRules = false);
     };
 
     class GrammarSemicolon : public Grammar
