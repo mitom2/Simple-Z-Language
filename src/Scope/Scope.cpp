@@ -65,6 +65,21 @@ int szl::Scope::getStackSize() const
     return stackHead->getStackSize();
 }
 
+void szl::Scope::renameHead(const std::string &newName)
+{
+    auto buf = *stackHead;
+    for (auto variable = variables.begin(); variable != variables.end(); variable++)
+    {
+        if ((*variable).second.getOffset() == stackHead->getOffset())
+        {
+            variable = variables.erase(variable);
+            insertVariable(newName, buf.getStackSize());
+            return;
+        }
+    }
+    throw szl::SZLException("Error while assigning variable name");
+}
+
 szl::Scope::~Scope()
 {
     int offset = 0;

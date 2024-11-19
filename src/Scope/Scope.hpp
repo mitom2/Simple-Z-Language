@@ -41,6 +41,8 @@ namespace szl
 
         int getStackSize() const;
 
+        void renameHead(const std::string &newName);
+
         ~Scope();
     };
 
