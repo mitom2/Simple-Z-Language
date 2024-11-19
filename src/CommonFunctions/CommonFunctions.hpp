@@ -10,7 +10,7 @@ namespace szl
 
     class Scope;
 
-    void storeRegisters(std::string &code, szl::Scope &scope);
+    void storeRegisters(int returnSize, std::string &code, szl::Scope &scope);
 
     void restoreRegisters(std::string &code, szl::Scope &scope);
 

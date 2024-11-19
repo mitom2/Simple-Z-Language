@@ -1,13 +1,26 @@
 #include "CommonFunctions.hpp"
 
-void szl::storeRegisters(std::string &code, szl::Scope &scope)
+void szl::storeRegisters(int returnSize, std::string &code, szl::Scope &scope)
 {
     if (scope.getVariables().count("[REGSAVE]"))
     {
         throw szl::SZLException("Can not store registers more than once in a single scope");
     }
-    scope.insertVariable("[REGSAVE]", 12);
-    code += "CALL @stdszllib_store_registers\n";
+    if (returnSize == 0)
+    {
+        scope.insertVariable("[REGSAVE]", 12, "[REGSAVE]");
+        code += "CALL @stdszllib_store_all_registers\n";
+    }
+    else if (returnSize == 2)
+    {
+        scope.insertVariable("[REGSAVE]", 10, "[REGSAVE]");
+        code += "CALL @stdszllib_store_default_registers\n";
+    }
+    else if (returnSize == 4)
+    {
+        scope.insertVariable("[REGSAVE]", 8, "[REGSAVE]");
+        code += "CALL @stdszllib_store_basic_registers\n";
+    }
 }
 
 void szl::restoreRegisters(std::string &code, szl::Scope &scope)
@@ -22,5 +35,10 @@ void szl::restoreRegisters(std::string &code, szl::Scope &scope)
     }
     int size = scope["[REGSAVE]"].getStackSize();
     scope.getVariables().erase("[REGSAVE]");
-    code += "CALL @stdszllib_restore_registers\n";
+    if (size == 8)
+        code += "CALL @stdszllib_restore_basic_registers\n";
+    if (size == 10)
+        code += "CALL @stdszllib_restore_default_registers\n";
+    if (size == 12)
+        code += "CALL @stdszllib_restore_all_registers\n";
 }

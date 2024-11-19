@@ -54,11 +54,12 @@ void szl::compile(const std::string &in, const std::string &out)
     szl::Grammar grammar(true);
     std::string res;
     {
-        szl::Scope scope(&res);
+        szl::Scope scope(2, &res);
         for (std::size_t i = 0; i < program.size();)
         {
             bool matched = false;
-            auto code = grammar.execute(program, i, scope);
+            std::vector<std::string> internal;
+            auto code = grammar.execute(program, i, scope, internal);
             if (code != "")
             {
                 res += code;

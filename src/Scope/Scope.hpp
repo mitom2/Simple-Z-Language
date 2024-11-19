@@ -17,7 +17,9 @@ namespace szl
         std::string *code;
 
     public:
-        Scope(std::string *code, Scope *parent = nullptr);
+        Scope(int returnSize, std::string *code, Scope *parent = nullptr);
+
+        Scope(int returnSize, Scope *parent);
 
         szl::Variable operator[](const std::string &name);
 
@@ -31,9 +33,9 @@ namespace szl
 
         void insertVariable(const std::string &name, szl::Variable &var);
 
-        void insertVariable(const std::string &name, int size);
+        void insertVariable(const std::string &name, int size, const std::string &type);
 
-        void insertVariable(const std::string &name, int offset, int size);
+        void insertVariable(const std::string &name, int offset, int size, const std::string &type);
 
         int getHeadOffset() const;
 
@@ -42,6 +44,8 @@ namespace szl
         int getStackSize() const;
 
         void renameHead(const std::string &newName);
+
+        std::string *getCode() { return code; };
 
         ~Scope();
     };

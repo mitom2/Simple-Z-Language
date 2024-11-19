@@ -1,6 +1,6 @@
 #include "Variable.hpp"
 
-szl::Variable::Variable(const int offset, const int size) : offset(offset), stackSize(size)
+szl::Variable::Variable(const int offset, const int size, const std::string &type) : offset(offset), stackSize(size), type(type)
 {
 }
 

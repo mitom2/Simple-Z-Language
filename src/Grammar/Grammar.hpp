@@ -35,7 +35,7 @@ namespace szl
 
         std::vector<Grammar *> subRules;
 
-        std::string executeSubRules(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const;
+        std::string executeSubRules(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const;
 
         static std::string binaryAdd(std::string in1, std::string in2);
 
@@ -48,7 +48,7 @@ namespace szl
          * @param scope current scope
          * @return assembly code if matched, emptry string otherwise
          */
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const;
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const;
 
         void addSubRule(Grammar *gRule);
 
@@ -60,7 +60,7 @@ namespace szl
     class GrammarSingleVariableDeclaration : public Grammar
     {
     public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const override;
 
         GrammarSingleVariableDeclaration(bool addSubRules = false);
     };
@@ -68,13 +68,13 @@ namespace szl
     class GrammarTwoLiteralsAddition : public Grammar
     {
     public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const override;
     };
 
     class GrammarBrackets : public Grammar
     {
     public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const override;
 
         GrammarBrackets(bool addSubRules = false);
     };
@@ -82,19 +82,27 @@ namespace szl
     class GrammarSemicolon : public Grammar
     {
     public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const override;
     };
 
     class GrammarIdentifier : public Grammar
     {
     public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const override;
     };
 
     class GrammarLiteral : public Grammar
     {
     public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const override;
+    };
+
+    class GrammarAddition : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarAddition(bool addSubRules = false);
     };
 
 } // namespace szl

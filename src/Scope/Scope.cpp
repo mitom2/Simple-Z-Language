@@ -1,8 +1,14 @@
 #include "Scope.hpp"
 
-szl::Scope::Scope(std::string *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr)
+szl::Scope::Scope(int returnSize, std::string *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr)
 {
-    szl::storeRegisters(*code, *this);
+    szl::storeRegisters(returnSize, *code, *this);
+}
+
+szl::Scope::Scope(int returnSize, Scope *parent)
+{
+    code = parent->getCode();
+    szl::storeRegisters(returnSize, *code, *this);
 }
 
 szl::Variable szl::Scope::operator[](const std::string &name)
@@ -33,14 +39,14 @@ void szl::Scope::insertVariable(const std::string &name, szl::Variable &var)
     stackHead = &variables[name];
 }
 
-void szl::Scope::insertVariable(const std::string &name, int size)
+void szl::Scope::insertVariable(const std::string &name, int size, const std::string &type)
 {
-    insertVariable(name, getNextOffset(size), size);
+    insertVariable(name, getNextOffset(size), size, type);
 }
 
-void szl::Scope::insertVariable(const std::string &name, int offset, int size)
+void szl::Scope::insertVariable(const std::string &name, int offset, int size, const std::string &type)
 {
-    szl::Variable v(offset, size);
+    szl::Variable v(offset, size, type);
     insertVariable(name, v);
 }
 
@@ -73,7 +79,7 @@ void szl::Scope::renameHead(const std::string &newName)
         if ((*variable).second.getOffset() == stackHead->getOffset())
         {
             variable = variables.erase(variable);
-            insertVariable(newName, buf.getStackSize());
+            insertVariable(newName, buf.getStackSize(), buf.getType());
             return;
         }
     }
@@ -94,6 +100,7 @@ szl::Scope::~Scope()
         variable = variables.erase(variable);
     }
     stackHead = &operator[]("[REGSAVE]");
-    *code += "LD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\n";
+    if (offset)
+        *code += "LD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\n";
     szl::restoreRegisters(*code, *this);
 }
