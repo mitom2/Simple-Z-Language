@@ -12,7 +12,7 @@ namespace szl
 
     class Grammar
     {
-        static std::string toBin(long in);
+        static std::string toBin(uint32_t in);
 
         static std::string toBinFloat(double in);
 
@@ -57,24 +57,12 @@ namespace szl
         virtual ~Grammar();
     };
 
-    class GrammarSingleVariableDeclarationLiteral : public Grammar
-    {
-    public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
-    };
-
-    class GrammarSingleVariableDeclarationIdentifier : public Grammar
-    {
-    public:
-        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
-    };
-
-    class GrammarSingleVariableDeclarationSubRule : public Grammar
+    class GrammarSingleVariableDeclaration : public Grammar
     {
     public:
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
 
-        GrammarSingleVariableDeclarationSubRule(bool addSubRules = false);
+        GrammarSingleVariableDeclaration(bool addSubRules = false);
     };
 
     class GrammarTwoLiteralsAddition : public Grammar
@@ -92,6 +80,18 @@ namespace szl
     };
 
     class GrammarSemicolon : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+    };
+
+    class GrammarIdentifier : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;
+    };
+
+    class GrammarLiteral : public Grammar
     {
     public:
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const override;

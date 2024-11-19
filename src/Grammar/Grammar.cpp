@@ -1,171 +1,6 @@
 #include "Grammar.hpp"
 
-std::string szl::GrammarSingleVariableDeclarationLiteral::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
-{
-    if (position + 4 >= program.size())
-        return "";
-    if (program[position].category != szl::TokenCategory::Keyword)
-        return "";
-    if (program[position + 1].category != szl::TokenCategory::Identifier)
-        return "";
-    if (program[position + 2].category != szl::TokenCategory::Keyword)
-        return "";
-    if (program[position + 3].category != szl::TokenCategory::Literal)
-        return "";
-    if (program[position + 4].category != szl::TokenCategory::Punctuation)
-        return "";
-    auto type = program[position].content;
-    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "float" && type != "char" && type != "string")
-        return "";
-    if (program[position + 2].content != "=")
-        return "";
-    if (program[position + 4].content != ";")
-        return "";
-    auto value = program[position + 3].content;
-    auto name = program[position + 1].content;
-    if (scope.exists(name))
-        throw szl::SZLException("Redeclaration of variable " + name);
-
-    // INT/UINT/CHAR
-    if (type == "int" || type == "uint" || type == "char")
-    {
-        if (!szl::Grammar::isValidNumber(value))
-        {
-            if (value[0] != '\'' || value[value.length() - 1] != '\'')
-                throw szl::SZLException("Assigned value does not match declared type");
-        }
-        scope.insertVariable(name, 2);
-        position += 5;
-        if (value == "0")
-        {
-            return "XOR H\nXOR L\nPUSH HL\n";
-        }
-        if (value[0] == '\'')
-        {
-            return "LD HL,%" + szl::Grammar::fromChar(value) + "\nPUSH HL\n";
-        }
-        if (value.length() > 1)
-        {
-            std::string res;
-            if (value[1] != 'x' && value[1] != 'b' && value[0] == '0')
-                res = szl::Grammar::fromOct(value);
-            else if (value[1] == 'x')
-                res = szl::Grammar::fromHex(value);
-            else if (value[1] == 'b')
-                res = szl::Grammar::fromBin(value);
-            else
-                res = szl::Grammar::fromDec(value);
-            if (res.length() > 16)
-                throw szl::SZLException("Assigned value exceeds max allowed value for the type");
-            return "LD HL,%" + res + "\nPUSH HL\n";
-        }
-        if (value.length() == 1)
-        {
-            std::string res = szl::Grammar::fromDec(value);
-            if (res.length() > 16)
-                throw szl::SZLException("Assigned value exceeds max allowed value for the type");
-            return "LD HL,%" + res + "\nPUSH HL\n";
-        }
-    }
-
-    // LONG/ULONG
-    if (type == "long" || type == "ulong")
-    {
-        if (!szl::Grammar::isValidNumber(value))
-            throw szl::SZLException("Assigned value does not match declared type");
-        scope.insertVariable(name, 4);
-        position += 5;
-        if (value == "0")
-        {
-            return "LD HL,%0\nPUSH HL\n";
-        }
-        if (value.length() > 1)
-        {
-            std::string res;
-            if (value[1] != 'x' && value[1] != 'b' && value[0] == '0')
-                res = szl::Grammar::fromOct(value);
-            else if (value[1] == 'x')
-                res = szl::Grammar::fromHex(value);
-            else if (value[1] == 'b')
-                res = szl::Grammar::fromBin(value);
-            else
-                res = szl::Grammar::fromDec(value);
-            if (res.length() > 32)
-                throw szl::SZLException("Assigned value exceeds max allowed value for the type");
-            std::string upper, lower;
-            if (res.length() < 16)
-            {
-                upper = "0";
-                lower = res;
-            }
-            else
-            {
-                upper = res.substr(0, res.length() - 16);
-                lower = res.substr(res.length() - 16, 16);
-            }
-            return "LD HL,%" + lower + "\nPUSH HL\nLD HL,%" + upper + "\nPUSH HL\n";
-        }
-        if (value.length() == 1)
-        {
-            std::string res = szl::Grammar::fromDec(value);
-            std::string upper, lower;
-            if (res.length() < 16)
-            {
-                upper = "0";
-                lower = res;
-            }
-            else
-            {
-                upper = res.substr(0, res.length() - 16);
-                lower = res.substr(res.length() - 16, 16);
-            }
-            return "LD HL,%" + lower + "\nPUSH HL\nLD HL,%" + upper + "\nPUSH HL\n";
-        }
-    }
-
-    // FLOAT
-    if (type == "float")
-    {
-        if (!szl::Grammar::isValidNumber(value))
-            throw szl::SZLException("Assigned value does not match declared type");
-        scope.insertVariable(name, 4);
-        position += 5;
-        auto res = szl::Grammar::fromDecFloat(value);
-        return "LD HL,%" + res.substr(16, 16) + "\nPUSH HL\nLD HL,%" + res.substr(0, 16) + "\nPUSH HL\n";
-    }
-
-    // BOOL
-    if (type == "bool")
-    {
-        if (value != "true" && value != "false")
-            throw szl::SZLException("Assigned value does not match declared type");
-        scope.insertVariable(name, 2);
-        position += 5;
-        if (value == "true")
-            return "LD HL,%1\nPUSH HL\n";
-        return "LD HL,%0\nPUSH HL\n";
-    }
-
-    // STRING
-    if (type == "string")
-    {
-        if (value[0] != '"' || value[value.length() - 1] != '"')
-            throw szl::SZLException("Malformed string declaration");
-        int size = (value.length() - 1) * 2;
-        scope.insertVariable(name, size);
-        position += 5;
-        std::string res;
-        for (std::size_t i = 1; i < value.size() - 1; i++)
-        {
-            res += "LD HL,%" + szl::Grammar::fromChar("'" + value.substr(i, 1) + "'") + "\nPUSH HL\n";
-        }
-        return res + "LD HL,%0\nPUSH HL\n";
-    }
-
-    return "";
-}
-
-std::string szl::Grammar::toBin(long in)
+std::string szl::Grammar::toBin(uint32_t in)
 {
     std::string res;
     for (; in > 0; in /= 2)
@@ -253,13 +88,15 @@ std::string szl::Grammar::fromOct(const std::string &in)
 std::string szl::Grammar::fromHex(const std::string &in)
 {
     std::string buf = in.substr(2, in.length() - 2);
-    long res = 0;
+    uint32_t res = 0;
     for (std::size_t i = 0; i < buf.length(); i++)
     {
         if (buf[i] <= '9')
             res += (buf[i] - '0') * std::pow(16, buf.length() - i - 1);
         else if (buf[i] <= 'Z')
+        {
             res += (buf[i] - 'A' + 10) * std::pow(16, buf.length() - i - 1);
+        }
         else
             res += (buf[i] - 'a' + 10) * std::pow(16, buf.length() - i - 1);
     }
@@ -316,33 +153,6 @@ std::string szl::Grammar::fromChar(const std::string &in)
 
 std::string szl::Grammar::fromDecFloat(const std::string &in)
 {
-    /*std::string buf = in;
-    double res = 0;
-    std::size_t point = 0;
-    bool found = false;
-    for (const auto &it : buf)
-    {
-        if (it == '.')
-        {
-            found = true;
-            break;
-        }
-        point++;
-    }
-    if (!found)
-        point = buf.length();
-    for (std::size_t i = 0; i < point; i++)
-    {
-        res += (buf[i] - '0') * std::pow(10, point - i - 1);
-    }
-    if (found)
-    {
-        for (std::size_t i = point + 1; i < buf.length(); i++)
-        {
-            res += (buf[i] - '0') * std::pow(10, point - i);
-        }
-    }
-    return szl::Grammar::toBinFloat(res);*/
     return szl::Grammar::toBinFloat(std::atof(in.c_str()));
 }
 
@@ -440,12 +250,14 @@ std::string szl::Grammar::binaryAdd(std::string in1, std::string in2)
     }
     for (std::size_t i = in1.length(); i > 0; i--)
     {
-        char partial = in1[i - 1] - '0' + in2[i - 1] - '0' + carry ? 1 : 0;
+        char partial = (in1[i - 1] - '0') + (in2[i - 1] - '0') + (carry ? 1 : 0);
         carry = false;
         if (partial > 1)
             carry = true;
         res = (partial % 2 ? "1" : "0") + res;
     }
+    if (carry)
+        res = "1" + res;
     return res;
 }
 
@@ -464,9 +276,7 @@ szl::Grammar::Grammar(bool addSubRules)
     if (!addSubRules)
         return;
     addSubRule(new szl::GrammarBracketsRecursive(true));
-    addSubRule(new szl::GrammarSingleVariableDeclarationSubRule(true));
-    addSubRule(new szl::GrammarSingleVariableDeclarationIdentifier);
-    addSubRule(new szl::GrammarSingleVariableDeclarationLiteral);
+    addSubRule(new szl::GrammarSingleVariableDeclaration(true));
     addSubRule(new szl::GrammarSemicolon);
     // TODO
 }
@@ -475,83 +285,12 @@ szl::Grammar::~Grammar()
 {
     for (std::size_t i = 0; i < subRules.size(); i++)
     {
-        delete subRules[i];
+        if (subRules[i] != this)
+            delete subRules[i];
     }
 }
 
-std::string szl::GrammarSingleVariableDeclarationIdentifier::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
-{
-    if (position + 4 >= program.size())
-        return "";
-    if (program[position].category != szl::TokenCategory::Keyword)
-        return "";
-    if (program[position + 1].category != szl::TokenCategory::Identifier)
-        return "";
-    if (program[position + 2].category != szl::TokenCategory::Keyword)
-        return "";
-    if (program[position + 3].category != szl::TokenCategory::Identifier)
-        return "";
-    if (program[position + 4].category != szl::TokenCategory::Punctuation)
-        return "";
-    auto type = program[position].content;
-    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "float" && type != "char" && type != "string")
-        return "";
-    if (program[position + 2].content != "=")
-        return "";
-    if (program[position + 4].content != ";")
-        return "";
-    auto value = program[position + 3].content;
-    auto name = program[position + 1].content;
-    if (scope.exists(name))
-        throw szl::SZLException("Redeclaration of variable " + name);
-
-    // INT/UINT/CHAR/BOOL
-    if (type == "int" || type == "uint" || type == "char" || type == "bool")
-    {
-        if (!scope.exists(value))
-            throw szl::SZLException("Assigned variable does not exist");
-        if (scope[value].getStackSize() != 2)
-            throw szl::SZLException("Size of assigned variable does not match declared type");
-        auto pos = scope[value].getPosition();
-        scope.insertVariable(name, 2);
-        position += 5;
-        return "LD HL,(#" + std::to_string(pos) + ")\nPUSH HL\n";
-    }
-
-    // LONG/ULONG/FLOAT
-    if (type == "long" || type == "ulong" || type == "float")
-    {
-        if (!scope.exists(value))
-            throw szl::SZLException("Assigned variable does not exist");
-        if (scope[value].getStackSize() != 4)
-            throw szl::SZLException("Size of assigned variable does not match declared type");
-        auto pos = scope[value].getPosition();
-        scope.insertVariable(name, 4);
-        position += 5;
-        return "LD HL,(#" + std::to_string(pos + 2) + ")\nPUSH HL\nLD HL,(#" + std::to_string(pos) + ")\nPUSH HL\n";
-    }
-
-    // STRING
-    if (type == "string")
-    {
-        if (!scope.exists(value))
-            throw szl::SZLException("Assigned variable does not exist");
-        auto pos = scope[value].getPosition() + scope[value].getStackSize() - 2;
-        position += 5;
-        std::string res;
-        for (std::size_t i = 0; i < scope[value].getStackSize(); i += 2)
-        {
-            res += "LD HL,(#" + std::to_string(pos) + ")\nPUSH HL\n";
-            pos -= 2;
-        }
-        scope.insertVariable(name, scope[value].getStackSize());
-        return res;
-    }
-
-    return "";
-}
-
-std::string szl::GrammarSingleVariableDeclarationSubRule::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
+std::string szl::GrammarSingleVariableDeclaration::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
 {
     if (position + 4 >= program.size())
         return "";
@@ -573,48 +312,46 @@ std::string szl::GrammarSingleVariableDeclarationSubRule::execute(std::vector<sz
     std::string subRes = executeSubRules(program, newPos, scope);
     if (subRes.length() == 0)
         return "";
-    position = newPos;
+    if (program[newPos].category != szl::TokenCategory::Punctuation && program[position].content != ";")
+    {
+        return "";
+    }
+    position = newPos + 1;
 
     if (scope.exists(name))
         throw szl::SZLException("Redeclaration of variable " + name);
 
-    // INT/UINT/CHAR/BOOL
+    // INT/UINT/CHAR/BOOL - HL contains all bytes
     if (type == "int" || type == "uint" || type == "char" || type == "bool")
     {
         scope.insertVariable(name, 2);
         return subRes + "PUSH HL\n";
     }
 
-    // LONG/ULONG/FLOAT - DE contain lower bytes, HL upper ones
+    // LONG/ULONG/FLOAT - DE contains lower bytes, HL upper ones
     if (type == "long" || type == "ulong" || type == "float")
     {
         scope.insertVariable(name, 4);
         return subRes + "PUSH DE\nPUSH HL\n";
     }
 
-    // STRING - scope's stack head is string limiting NULL and stack head size is string size
+    // STRING - already head of the stack
     if (type == "string")
     {
-        auto pos = scope.getStackHead()->getPosition() + scope.getStackHead()->getStackSize() - 2;
-        std::string res;
-        for (std::size_t i = 0; i < scope.getStackHead()->getStackSize(); i += 2)
-        {
-            res += "LD HL,(#" + std::to_string(pos) + ")\nPUSH HL\n";
-            pos -= 2;
-        }
-        scope.insertVariable(name, scope.getStackHead()->getStackSize());
-        return subRes + res;
+        scope.renameHead(name);
     }
 
     return subRes;
 }
 
-szl::GrammarSingleVariableDeclarationSubRule::GrammarSingleVariableDeclarationSubRule(bool addSubRules) : szl::Grammar()
+szl::GrammarSingleVariableDeclaration::GrammarSingleVariableDeclaration(bool addSubRules) : szl::Grammar()
 {
     if (!addSubRules)
         return;
     addSubRule(new szl::GrammarBracketsRecursive(true));
     addSubRule(new szl::GrammarTwoLiteralsAddition);
+    addSubRule(new szl::GrammarLiteral);
+    addSubRule(new szl::GrammarIdentifier);
     // TODO
 }
 
@@ -627,8 +364,6 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
     if (program[position + 1].category != szl::TokenCategory::Keyword)
         return "";
     if (program[position + 2].category != szl::TokenCategory::Literal)
-        return "";
-    if (program[position + 3].category != szl::TokenCategory::Punctuation && program[position + 3].category != szl::TokenCategory::Bracket)
         return "";
     if (program[position + 1].content != "+")
         return "";
@@ -657,7 +392,7 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
                 floats = true;
         }
     }
-    position += 4;
+    position += 3;
     int size = 0; // For string addition only
     if (value1[0] == '\'')
     {
@@ -749,7 +484,7 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
     if (partial.length() > 32)
         throw szl::SZLException("Added values exceed max allowed size");
     if (partial.length() <= 16)
-        return "LD HL,%" + partial + "\nLD DE,%0\n";
+        return "LD HL,%" + partial + "\n";
     while (partial.length() < 32)
     {
         partial = "0" + partial;
@@ -793,6 +528,9 @@ szl::GrammarBracketsRecursive::GrammarBracketsRecursive(bool addSubRules)
     if (!addSubRules)
         return;
     addSubRule(new szl::GrammarTwoLiteralsAddition);
+    addSubRule(new szl::GrammarLiteral);
+    addSubRule(new szl::GrammarIdentifier);
+    addSubRule(this);
     // TODO
 }
 
@@ -804,4 +542,109 @@ std::string szl::GrammarSemicolon::execute(std::vector<szl::Token> &program, std
         return "";
     position++;
     return "\n";
+}
+
+std::string szl::GrammarIdentifier::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
+{
+    if (program[position].category != szl::TokenCategory::Identifier)
+        return "";
+    auto name = program[position].content;
+    if (!scope.exists(name))
+        return "";
+    auto size = scope[name].getStackSize();
+    position++;
+    if (size == 2)
+        return "LD HL,(#" + std::to_string(scope[name].getPosition()) + ")\n";
+    if (size == 4)
+        return "LD HL,(#" + std::to_string(scope[name].getPosition()) + ")\nLD DE,(#" + std::to_string(scope[name].getPosition() + 2) + ")\n";
+    return "LD HL,#" + std::to_string(scope[name].getPosition()) + "\n";
+}
+
+std::string szl::GrammarLiteral::execute(std::vector<szl::Token> &program, std::size_t &position, szl::Scope &scope) const
+{
+    if (program[position].category != szl::TokenCategory::Literal)
+        return "";
+    auto value = program[position].content;
+    if (szl::Grammar::isValidNumber(value))
+    {
+        position++;
+        if (value == "0")
+        {
+            return "LD HL,%0\n";
+        }
+        if (value.length() > 1)
+        {
+            std::string res;
+            if (value[1] != 'x' && value[1] != 'b' && value[0] == '0')
+                res = szl::Grammar::fromOct(value);
+            else if (value[1] == 'x')
+                res = szl::Grammar::fromHex(value);
+            else if (value[1] == 'b')
+                res = szl::Grammar::fromBin(value);
+            else
+                res = szl::Grammar::fromDec(value);
+            if (res.length() > 32)
+            {
+                std::string cmd;
+                int size = 0;
+                for (std::size_t i = 16; i < res.length(); i += 16)
+                {
+                    size += 2;
+                    cmd += "LD HL,%" + res.substr(res.length() - i, 16) + "\nPUSH HL\n";
+                }
+                int num = 0;
+                while (scope.exists("[LITERALSAVE" + std::to_string(num) + "]"))
+                {
+                    num++;
+                }
+                scope.insertVariable("[LITERALSAVE" + std::to_string(num) + "]", size);
+                return cmd + "LD HL,#" + std::to_string(scope["[LITERALSAVE" + std::to_string(num) + "]"].getPosition());
+            }
+            if (res.length() > 16)
+            {
+                return "LD DE,%" + res.substr(res.length() - 16, 16) + "\nLD HL,%" + res.substr(0, res.length() - 16) + "\n";
+            }
+            return "LD HL,%" + res + "\n";
+        }
+        if (value.length() == 1)
+        {
+            return "LD HL,%" + szl::Grammar::fromDec(value) + "\n";
+        }
+    }
+    if (value[0] == '\'')
+    {
+        position++;
+        return "LD HL,%" + szl::Grammar::fromChar(value) + "\n";
+    }
+    if (szl::Grammar::isValidFloatNumber(value))
+    {
+        position++;
+        auto res = szl::Grammar::fromDecFloat(value);
+        return "LD DE,%" + res.substr(16, 16) + "\nLD HL,%" + res.substr(0, 16) + "\n";
+    }
+    if (value == "true" || value == "false")
+    {
+        position++;
+        if (value == "true")
+            return "LD HL,%1\n";
+        return "LD HL,%0\n";
+    }
+    if (value[0] == '"' && value[value.length() - 1] == '"')
+    {
+        int size = (value.length() - 1) * 2;
+        int num = 0;
+        while (scope.exists("[STRINGSAVE" + std::to_string(num) + "]"))
+        {
+            num++;
+        }
+        scope.insertVariable("[STRINGSAVE" + std::to_string(num) + "]", size);
+        position++;
+        std::string res;
+        for (std::size_t i = 1; i < value.size() - 1; i++)
+        {
+            res += "LD HL,%" + szl::Grammar::fromChar("'" + value.substr(i, 1) + "'") + "\nPUSH HL\n";
+        }
+        return res + "LD HL,%0\nPUSH HL\n";
+    }
+    throw szl::SZLException("Can not load given value");
 }
