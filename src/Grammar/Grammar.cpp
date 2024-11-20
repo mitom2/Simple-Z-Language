@@ -699,7 +699,7 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
         subScope = new szl::Scope(2, &res, &scope);
     }
     newPos++;
-    res += executeSubRules(program, newPos, scope, internalState);
+    res += executeSubRules(program, newPos, *subScope, internalState);
     if (!res.length())
         throw szl::SZLException("Addition syntax error");
     position = newPos;
@@ -724,10 +724,12 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
     // LONG/ULONG
     if (internalState.back() == "long" || internalState.back() == "ulong")
     {
-        return resL + res + "LD B,H\nLD C,L\nLD HL,(#" + std::to_string(scope["[ADDSAVE" + std::to_string(num) + "]"].getPosition() + 2) + ")\nADD HL,DE\nEX DE,HL\nLD H,B\nLD L,C\nLD B,D\nLD C,E\nLD DE,(#" + std::to_string(scope["[ADDSAVE" + std::to_string(num) + "]"].getPosition()) + ")\nADC HL,DE\nLD D,B\nLD E,C\n";
+        auto pos = scope["[ADDSAVE" + std::to_string(num) + "]"].getPosition();
+        scope.popHead();
+        return resL + res + "LD B,H\nLD C,L\nLD HL,(#" + std::to_string(pos + 2) + ")\nADD HL,DE\nEX DE,HL\nLD H,B\nLD L,C\nLD B,D\nLD C,E\nLD DE,(#" + std::to_string(pos) + ")\nADC HL,DE\nEX DE,HL\nLD HL,#4\nADD HL,SP\nLD SP,HL\nEX DE,HL\nLD D,B\nLD E,C\n";
     }
 
-    // LONG/ULONG
+    // FLOAT
     if (internalState.back() == "float")
     {
         // TODO
@@ -736,8 +738,10 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
     // BOOL
     if (internalState.back() == "bool")
     {
-        return resL + "LD A,L\n" + res + "OR L\nLD L,A";
+        return resL + "LD A,L\n" + res + "OR L\nLD L,A\n";
     }
+
+    throw szl::SZLException("Addition type unrecognized");
 }
 
 szl::GrammarAddition::GrammarAddition(bool addSubRules)
