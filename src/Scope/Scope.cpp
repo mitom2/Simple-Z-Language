@@ -86,6 +86,28 @@ void szl::Scope::renameHead(const std::string &newName)
     throw szl::SZLException("Error while assigning variable name");
 }
 
+void szl::Scope::popHead()
+{
+    auto offset = stackHead->getOffset();
+    szl::Variable *newHead = nullptr;
+    for (auto &it : variables)
+    {
+        if (it.second.getOffset() == offset)
+        {
+            variables.erase(it.first);
+            break;
+        }
+    }
+    for (auto &it : variables)
+    {
+        if (newHead != nullptr)
+        {
+            newHead = newHead->getOffset() < it.second.getOffset() ? &(it.second) : newHead;
+        }
+    }
+    stackHead = newHead;
+}
+
 szl::Scope::~Scope()
 {
     int offset = 0;

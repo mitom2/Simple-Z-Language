@@ -47,6 +47,8 @@ namespace szl
 
         std::string *getCode() { return code; };
 
+        void popHead();
+
         ~Scope();
     };
 
