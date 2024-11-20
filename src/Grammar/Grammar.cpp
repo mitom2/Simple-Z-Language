@@ -44,6 +44,7 @@ std::string szl::Grammar::toBinFloat(double in)
             if (rRes[i] == '1')
             {
                 shift = i + 1;
+                break;
             }
         }
     }
@@ -457,7 +458,7 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
             res2 += "LD HL,%" + szl::Grammar::fromChar("'" + value2.substr(i, 1) + "'") + "\nPUSH HL\n";
         }
         internalState.push_back("string");
-        return res1 + res2 + "LD HL,%0\nPUSH HL\n";
+        return res1 + res2 + "LD HL,%0\nPUSH HL\nLD HL,SP\n";
     }
     else if (!floats)
     {
@@ -666,7 +667,7 @@ std::string szl::GrammarLiteral::execute(std::vector<szl::Token> &program, std::
         {
             res += "LD HL,%" + szl::Grammar::fromChar("'" + value.substr(i, 1) + "'") + "\nPUSH HL\n";
         }
-        return res + "LD HL,%0\nPUSH HL\n";
+        return res + "LD HL,%0\nPUSH HL\nLD HL,SP\n";
     }
     throw szl::SZLException("Can not load given value");
 }
@@ -694,9 +695,13 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
         res += "PUSH DE\nPUSH HL\n";
         subScope = new szl::Scope(4, &res, &scope);
     }
-    else
+    else if (internalState.back() != "string")
     {
         subScope = new szl::Scope(2, &res, &scope);
+    }
+    else
+    {
+        subScope = new szl::Scope(-1, &res, &scope);
     }
     newPos++;
     res += executeSubRules(program, newPos, *subScope, internalState);
@@ -706,14 +711,13 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
     if (internalState.back() != internalState[internalState.size() - 2])
         throw szl::SZLException("Attempting addition of differing types");
     internalState.pop_back();
+    delete subScope;
 
     // STRING
     if (internalState.back() == "string")
     {
-        // TODO
+        throw szl::SZLException("Strings can not be added");
     }
-
-    delete subScope;
 
     // INT/UINT/CHAR
     if (internalState.back() == "int" || internalState.back() == "uint" || internalState.back() == "char")
@@ -721,7 +725,8 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
         return resL + "EX DE,HL\n" + res + "ADD HL,DE\n";
     }
 
-    // LONG/ULONG
+    // TODO: TEST
+    //  LONG/ULONG
     if (internalState.back() == "long" || internalState.back() == "ulong")
     {
         auto pos = scope["[ADDSAVE" + std::to_string(num) + "]"].getPosition();
@@ -732,7 +737,9 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
     // FLOAT
     if (internalState.back() == "float")
     {
-        // TODO
+        auto pos = scope["[ADDSAVE" + std::to_string(num) + "]"].getPosition();
+        scope.popHead();
+        return resL + res + "LD BC,(#" + std::to_string(pos) + ")\nLD IX,(#" + std::to_string(pos + 2) + ")\nCALL @stdszllib_add_floats\nLD B,H\nLD C,L\nLD HL,#4\nADD HL,SP\nLD SP,HL\nLD H,B\nLD L,C\n";
     }
 
     // BOOL

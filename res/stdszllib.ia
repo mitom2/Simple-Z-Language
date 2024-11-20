@@ -83,3 +83,142 @@
     PUSH HL
     EXX
     RET
+
+;Float1 in HLDE, Float2 in BCIX
+@stdszllib_add_floats
+    PUSH HL         ;Save both floats
+    PUSH DE
+    PUSH BC
+    PUSH IX
+    RL L            ;Extract exponents
+    RL H
+    LD A,B
+    RL C
+    RL A
+    SUB H           ;Compare exponents
+    JR NZ,%00100010 ;Values not aligned, jump to alignment
+                    ;Load floats and remove exponents
+                    ;Set:
+                    ;Float 1 mantissa: DHL
+                    ;Float 2 mantissa: ABC
+    PUSH HL         ;Save result exponent
+    LD HL,#2
+    ADD HL,SP
+    LD C,(HL)
+    INC HL
+    LD B,(HL)
+    INC HL
+    LD A,(HL)
+    INC HL
+    INC HL
+    LD E,(HL)
+    INC HL
+    LD D,(HL)
+    INC HL
+    LD L,(HL)
+    LD H,D
+    LD D,L
+    LD L,E
+    SLA D
+    SRL D
+    SLA A
+    SRL A
+    SET 7,D         ;Prepend one to D
+    SET 7,A         ;Prepend one to A
+    JR %01010100    ;Jump to calculations
+    JR C,%00101010  ;Jump to align 2
+                    ;Align 1
+    ADD A,H          
+    PUSH AF         ;Save result exponent
+    SUB H
+    LD HL,#6        ;Load first float
+    ADD HL,SP
+    LD E,(HL)
+    INC HL
+    LD D,(HL)
+    INC HL
+    LD L,(HL)
+    SET 7,L         ;Prepend one to L
+    LD B,A          ;After this line, loop begins to align float2 bit by bit
+    SRL L
+    RR D
+    RR E
+    DJNZ %11111000
+                    ;Set:
+                    ;Float 1 mantissa: ABC
+                    ;Float 2 mantissa: DHL
+    LD B,D
+    LD C,E
+    LD A,L
+    LD HL,2
+    ADD HL,SP
+    LD E,(HL)
+    INC HL
+    LD D,(HL)
+    INC HL
+    LD L,(HL)
+    LD H,D
+    LD D,L
+    LD L,E
+    SET 7,D         ;Prepend one to D
+    JR %00101000    ;Jump to calculations
+                    ;Align 2       
+    PUSH HL         ;Save result exponent
+    LD HL,#2        ;Load second float
+    ADD HL,SP
+    LD E,(HL)
+    INC HL
+    LD D,(HL)
+    INC HL
+    LD L,(HL)
+    SET 7,L         ;Prepend one to L      
+    NEG
+    LD B,A         ;After this line, loop begins to align float2 bit by bit
+    SRL L
+    RR D
+    RR E
+    DJNZ %11111000
+                    ;Set:
+                    ;Float 1 mantissa: DHL
+                    ;Float 2 mantissa: ABC
+    LD B,D
+    LD C,E
+    LD A,L
+    LD HL,6
+    ADD HL,SP
+    LD E,(HL)
+    INC HL
+    LD D,(HL)
+    INC HL
+    LD L,(HL)
+    LD H,D
+    LD D,L
+    LD L,E
+    SET 7,D         ;Prepend one to D
+                    ;Calculations
+    ADD HL,BC
+    ADC A,D
+    EX DE,HL        ;Move results to BDE
+    LD B,A
+    JR NC,%00001010 ;Jump if result does not need to be adjusted due to carry
+    SRL B
+    RR  D
+    RR  E
+    POP AF
+    INC A
+    JR %00000001    ;Jump over next POP AF
+    POP AF
+    ;Set results: BCDE
+    LD C,B
+    SRL A
+    LD B,A
+    JR C,%00000010  ;Jump to set MSB in C to 1, otherwise set to 0
+    RES 7,C
+    JR %00000010
+    SET 7,C
+    LD HL,#8        ;The end: clean up stack, move results to HLDE
+    ADD HL,SP
+    LD SP,HL
+    LD H,B
+    LD L,C
+    RET

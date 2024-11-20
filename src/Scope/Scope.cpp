@@ -2,13 +2,17 @@
 
 szl::Scope::Scope(int returnSize, std::string *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr)
 {
-    szl::storeRegisters(returnSize, *code, *this);
+    skipCleanup = returnSize < 0 ? true : false;
+    if (!skipCleanup)
+        szl::storeRegisters(returnSize, *code, *this);
 }
 
 szl::Scope::Scope(int returnSize, Scope *parent)
 {
+    skipCleanup = returnSize < 0 ? true : false;
     code = parent->getCode();
-    szl::storeRegisters(returnSize, *code, *this);
+    if (!skipCleanup)
+        szl::storeRegisters(returnSize, *code, *this);
 }
 
 szl::Variable szl::Scope::operator[](const std::string &name)
@@ -110,6 +114,8 @@ void szl::Scope::popHead()
 
 szl::Scope::~Scope()
 {
+    if (skipCleanup)
+        return;
     int offset = 0;
     for (auto variable = variables.begin(); variable != variables.end();)
     {

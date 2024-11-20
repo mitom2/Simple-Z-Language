@@ -15,6 +15,7 @@ namespace szl
         std::unordered_map<std::string, szl::Variable> variables;
         szl::Variable *stackHead;
         std::string *code;
+        bool skipCleanup;
 
     public:
         Scope(int returnSize, std::string *code, Scope *parent = nullptr);
