@@ -18,7 +18,10 @@ bool szl::RuleKeyword::check(const std::string &content, std::size_t position) c
     for (std::size_t i = 1; i + position < content.size(); i++)
     {
         if (keywords.count(content.substr(position, i)) != 0)
-            return true;
+        {
+            if (isSeparatorCharacter(content[position + i]))
+                return true;
+        }
         if (i > max)
             return false;
     }
