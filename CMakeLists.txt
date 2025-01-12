@@ -20,4 +20,7 @@ src/Rules/RulePunctuation.cpp
 src/Rules/RuleKeyword.cpp
 src/Rules/RuleIdentifier.cpp
 src/Grammar/Grammar.cpp
+src/NextUniqueId/NextUniqueId.cpp
+src/Tables/Tables.cpp
+src/Function/Function.cpp
 )
