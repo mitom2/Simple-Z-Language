@@ -4,7 +4,7 @@ bool szl::RuleComment::check(const std::string &content, std::size_t position) c
 {
     if (content.size() <= position + 1)
         return false;
-    if (content[position] != '/' || (content[position + 1] != '/' && !content[position + 1] != '*'))
+    if (content[position] != '/' || (content[position + 1] != '/' && content[position + 1] != '*'))
         return false;
     return true;
 }
