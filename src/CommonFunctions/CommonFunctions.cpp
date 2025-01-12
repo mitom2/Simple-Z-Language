@@ -21,6 +21,10 @@ void szl::storeRegisters(int returnSize, std::string &code, szl::Scope &scope)
         scope.insertVariable("[REGSAVE]", 8, "[REGSAVE]");
         code += "CALL @stdszllib_store_basic_registers\n";
     }
+    else if (returnSize == 12)
+    {
+        scope.insertVariable("[REGSAVE]", 0, "[REGSAVE]");
+    }
 }
 
 void szl::restoreRegisters(std::string &code, szl::Scope &scope)
