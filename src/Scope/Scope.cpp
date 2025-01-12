@@ -2,17 +2,27 @@
 
 szl::Scope::Scope(int returnSize, std::string *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr)
 {
-    skipCleanup = returnSize < 0 ? true : false;
-    if (!skipCleanup)
+    uniqueId = nextUniqueId++;
+    if (returnSize >= 0)
+    {
         szl::storeRegisters(returnSize, *code, *this);
+        skipCleanup = false;
+    }
+    else
+        skipCleanup = true;
 }
 
 szl::Scope::Scope(int returnSize, Scope *parent)
 {
-    skipCleanup = returnSize < 0 ? true : false;
+    uniqueId = nextUniqueId++;
     code = parent->getCode();
-    if (!skipCleanup)
+    if (returnSize >= 0)
+    {
         szl::storeRegisters(returnSize, *code, *this);
+        skipCleanup = false;
+    }
+    else
+        skipCleanup = true;
 }
 
 szl::Variable szl::Scope::operator[](const std::string &name)
@@ -114,8 +124,8 @@ void szl::Scope::popHead()
 
 szl::Scope::~Scope()
 {
-    if (skipCleanup)
-        return;
+    if (!skipCleanup)
+    {
     int offset = 0;
     for (auto variable = variables.begin(); variable != variables.end();)
     {
@@ -127,8 +137,11 @@ szl::Scope::~Scope()
         offset += (*variable).second.getStackSize();
         variable = variables.erase(variable);
     }
-    stackHead = &operator[]("[REGSAVE]");
+        if (!variables.count("[REGSAVE]"))
+            throw szl::SZLException("Registers restoration failed while concluding scope");
+        stackHead = &variables["[REGSAVE]"];
     if (offset)
-        *code += "LD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\n";
+            *code += "EXX\nLD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\nEXX\n";
     szl::restoreRegisters(*code, *this);
+    }
 }
