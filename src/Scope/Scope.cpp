@@ -122,26 +122,47 @@ void szl::Scope::popHead()
     stackHead = newHead;
 }
 
+std::string szl::Scope::getLabel() const
+{
+    return "@szlCompilerLabelScopeClosedId" + std::to_string(uniqueId);
+}
+
+std::string szl::Scope::getNextLabel()
+{
+    return "@szlCompilerLabelScopeClosedId" + std::to_string(nextUniqueId);
+}
+
+void szl::Scope::changeCode(std::string *newCode)
+{
+    code = newCode;
+}
+
+void szl::Scope::addCustomDeleteCode(const std::string &code)
+{
+    deleteCode = code;
+}
+
 szl::Scope::~Scope()
 {
     if (!skipCleanup)
     {
-    int offset = 0;
-    for (auto variable = variables.begin(); variable != variables.end();)
-    {
-        if ((*variable).first == "[REGSAVE]")
+        int offset = 0;
+        for (auto variable = variables.begin(); variable != variables.end();)
         {
-            variable++;
-            continue;
+            if ((*variable).first == "[REGSAVE]")
+            {
+                variable++;
+                continue;
+            }
+            offset += (*variable).second.getStackSize();
+            variable = variables.erase(variable);
         }
-        offset += (*variable).second.getStackSize();
-        variable = variables.erase(variable);
-    }
         if (!variables.count("[REGSAVE]"))
             throw szl::SZLException("Registers restoration failed while concluding scope");
         stackHead = &variables["[REGSAVE]"];
-    if (offset)
+        if (offset)
             *code += "EXX\nLD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\nEXX\n";
-    szl::restoreRegisters(*code, *this);
+        szl::restoreRegisters(*code, *this);
     }
+    *code += deleteCode + "@szlCompilerLabelScopeClosedId" + std::to_string(uniqueId) + "\n";
 }

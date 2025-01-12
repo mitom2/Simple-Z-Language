@@ -4,18 +4,19 @@
 #include "Variable/Variable.hpp"
 #include "SZLException/SZLException.hpp"
 #include "CommonFunctions/CommonFunctions.hpp"
+#include "NextUniqueId/NextUniqueId.hpp"
 
 namespace szl
 {
-
     class Scope
     {
-
+        uint32_t uniqueId;
         Scope *parent;
         std::unordered_map<std::string, szl::Variable> variables;
         szl::Variable *stackHead;
         std::string *code;
         bool skipCleanup;
+        std::string deleteCode;
 
     public:
         Scope(int returnSize, std::string *code, Scope *parent = nullptr);
@@ -49,6 +50,14 @@ namespace szl
         std::string *getCode() { return code; };
 
         void popHead();
+
+        std::string getLabel() const;
+
+        static std::string getNextLabel();
+
+        void changeCode(std::string *newCode);
+
+        void addCustomDeleteCode(const std::string &code);
 
         ~Scope();
     };
