@@ -2,7 +2,7 @@
 
 bool szl::RuleBracket::check(const std::string &content, std::size_t position) const
 {
-    return content[position] == '{' || content[position] == '}' || content[position] == '[' || content[position] == ']' || content[position] == '(' || content[position] == ')' || content[position] == '<' || content[position] == '>';
+    return content[position] == '{' || content[position] == '}' || content[position] == '[' || content[position] == ']' || content[position] == '(' || content[position] == ')';
 }
 
 szl::Token szl::RuleBracket::generateToken(const std::string &content, std::size_t position) const
