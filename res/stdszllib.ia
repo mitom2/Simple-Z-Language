@@ -1,5 +1,22 @@
 ;This file must be included before compilation at the beginning of the code (just after the initial .org). It contains basic SZL functions used in the program.
 
+;Here is a description of calling convention used by this library (which is not like normal calling convention, which uses only stack for arguments and HLDE/stack for return values):
+;All functions are called with CALL instruction. The return address is pushed to the stack as last parameter.
+
+;Functions do not guarantee that all registers will be preserved. If you need to preserve registers, use included functions.
+
+;Parameters/results are passed in HL, DE, BC, B'C', D'E', H'L' registers for 16-bit values.
+;Parameters/results are passed in HLDE, BCB'C', H'L'D'E' registers for 32-bit values.
+;Parameters/results are passed on the stack in other cases (bigger values or more parameters).
+;Note that the return address needs to be preserved in this case as it is first element on the stack.
+
+;After RET, stack must contain only return address (and possibly return values in discussed cases).
+
+
+
+;Following functions are used to store and restore registers:
+
+;Stores all primary registers (AF, BC, DE, HL, IX, IY) to the stack
 @stdszllib_store_all_registers
     EXX
     POP HL
@@ -15,6 +32,7 @@
     EXX
     RET
 
+;Restores all primary registers (AF, BC, DE, HL, IX, IY) from the stack
 @stdszllib_restore_all_registers
     EXX
     POP HL
@@ -30,6 +48,7 @@
     EXX
     RET
 
+;Stores all default registers (AF, BC, DE, IX, IY) to the stack
 @stdszllib_store_default_registers
     EXX
     POP HL
@@ -44,6 +63,7 @@
     EXX
     RET
 
+;Restores all default registers (AF, BC, DE, IX, IY) from the stack
 @stdszllib_restore_default_registers
     EXX
     POP HL
@@ -58,6 +78,7 @@
     EXX
     RET
 
+;Stores all basic registers (AF, BC, IX, IY) to the stack
 @stdszllib_store_basic_registers
     EXX
     POP HL
@@ -71,6 +92,7 @@
     EXX
     RET
 
+;Restores all basic registers (AF, BC, IX, IY) from the stack
 @stdszllib_restore_basic_registers
     EXX
     POP HL
@@ -84,9 +106,1336 @@
     EXX
     RET
 
-;Float1 in HLDE, Float2 in BCIX
-@stdszllib_add_floats
-    PUSH HL         ;Save both floats
+;Moves stack to lower addresses, creating free memory at the upper regions of the memory. Takes one argument: unsigned int offset the stack needs to be moved by.
+@stdszllib_move_stack
+    EX DE,HL
+    LD HL,%0
+    ADD HL,SP
+    OR A
+    SBC HL,DE
+    EX DE,HL
+    LD A,D
+    EXX
+    LD H,A
+    EXX
+    LD A,E
+    EXX
+    LD L,A
+    EXX
+    LD HL,%0
+    OR A
+    SBC HL,SP
+    LD B,H
+    LD C,L
+    LD HL,%0
+    ADD HL,SP
+    LDIR
+    EXX
+    LD SP,HL
+    EXX
+    RET
+
+;Performs XOR operation on two boolean values.
+@stdszllib_xor_bool
+    LD A,H
+    ADD A,L
+    CP %0
+    JP Z,@stdszllibXorBoolCh0
+    LD A,D
+    ADD A,E
+    CP %0
+    JP Z,@stdszllibXorBoolRet1
+    JP @stdszllibXorBoolRet0
+    @stdszllibXorBoolCh0
+    LD A,D
+    ADD A,E
+    CP %0
+    JP Z,@stdszllibXorBoolRet0
+    @stdszllibXorBoolRet1
+    LD HL,%1
+    RET
+    @stdszllibXorBoolRet0
+    LD HL,%1
+    RET
+
+;Performs bitwise XOR operation on two 16-bit values.
+@stdszllib_xor_16bit
+    LD A,H
+    XOR D
+    LD H,A
+    LD A,L
+    XOR E
+    LD L,A
+    RET
+
+;Performs bitwise XOR operation on two 32-bit values.
+@stdszllib_xor_32bit
+    LD A,H
+    XOR B
+    LD H,A
+    LD A,L
+    XOR C
+    LD L,A
+    LD A,D
+    EXX
+    XOR B
+    EXX
+    LD D,A
+    LD A,E
+    EXX
+    XOR C
+    EXX
+    LD E,A
+    RET
+
+;Performs OR operation on two boolean values.
+@stdszllib_or_bool
+    LD A,H
+    ADD A,L
+    CP %0
+    JP NZ,@stdszllibOrBoolRet1
+    LD A,D
+    ADD A,E
+    CP %0
+    JP Z,@stdszllibOrBoolRet0
+    LD HL,%1
+    @stdszllibOrBoolRet1
+    RET
+    @stdszllibOrBoolRet0
+    LD HL,%0
+    RET
+
+;Performs bitwise OR operation on two 16-bit values.
+@stdszllib_or_16bit
+    LD A,H
+    OR D
+    LD H,A
+    LD A,L
+    OR E
+    LD L,A
+    RET
+
+;Performs bitwise OR operation on two 32-bit values.
+@stdszllib_or_32bit
+    LD A,H
+    OR B
+    LD H,A
+    LD A,L
+    OR C
+    LD L,A
+    LD A,D
+    EXX
+    OR B
+    EXX
+    LD D,A
+    LD A,E
+    EXX
+    OR C
+    EXX
+    LD E,A
+    RET
+
+;Performs AND operation on two boolean values.
+@stdszllib_and_bool
+    LD A,H
+    ADD A,L
+    CP %0
+    JP Z,@stdszllibAndBoolRet0
+    LD A,D
+    ADD A,E
+    CP %0
+    JP NZ,@stdszllibAndBoolRet1
+    LD HL,%0
+    @stdszllibAndBoolRet0
+    RET
+    @stdszllibAndBoolRet1
+    LD HL,%1
+    RET
+
+;Performs bitwise AND operation on two 16-bit values.
+@stdszllib_and_16bit
+    LD A,H
+    AND D
+    LD H,A
+    LD A,L
+    AND E
+    LD L,A
+    RET
+
+;Performs bitwise AND operation on two 32-bit values.
+@stdszllib_and_32bit
+    LD A,H
+    AND B
+    LD H,A
+    LD A,L
+    AND C
+    LD L,A
+    LD A,D
+    EXX
+    AND B
+    EXX
+    LD D,A
+    LD A,E
+    EXX
+    AND C
+    EXX
+    LD E,A
+    RET
+
+;Performs logical negation on a 16-bit value.
+@stdszllib_negation_16bit
+    XOR A
+    CP H
+    JP Z,@stdszllibNegationBool0X
+    @stdszllibNegationBoolRet0
+    LD HL,%0
+    RET
+    @stdszllibNegationBool0X
+    CP L
+    JP NZ,@stdszllibNegationBoolRet0
+    LD HL,%1
+    RET
+
+;Performs logical negation on a 32-bit value, converting it into boolean.
+@stdszllib_negation_32bit
+    XOR A
+    CP H
+    JP Z,@stdszllibNegation32Bit0X
+    @stdszllibNegation32BitRet0
+    LD HL,%0
+    RET
+    @stdszllibNegation32Bit0X
+    CP L
+    JP NZ,@stdszllibNegation32BitRet0
+    CP D
+    JP NZ,@stdszllibNegation32BitRet0
+    CP E
+    JP NZ,@stdszllibNegation32BitRet0
+    LD HL,%1
+    RET
+
+;Performs bitwise negation on a 16-bit value.
+@stdszllib_not_16bit
+    LD A,H
+    CPL
+    LD H,A
+    LD A,L
+    CPL
+    LD L,A
+    RET
+
+;Performs bitwise negation on a 32-bit value.
+@stdszllib_not_32bit
+    LD A,H
+    CPL
+    LD H,A
+    LD A,L
+    CPL
+    LD L,A
+    LD A,D
+    CPL
+    LD D,A
+    LD A,E
+    CPL
+    LD E,A
+    RET
+
+;Performs left shift on a 16-bit value.
+@stdszllib_left_shift_16bit
+    XOR A
+    @stdszllibLeftShift16BitLoop
+    CP D
+    JP NZ,@stdszllibLeftShift16BitNo0
+    CP E
+    JP Z,@stdszllibLeftShift16BitNo0
+    RET
+    @stdszllibLeftShift16BitNo0
+    DEC DE
+    SLA L
+    RL H
+    JP @stdszllibLeftShift16BitLoop
+
+;Performs left shift on a 32-bit value.
+@stdszllib_left_shift_32bit
+    XOR A
+    @stdszllibLeftShift32BitLoop
+    CP B
+    JP NZ,@stdszllibLeftShift32BitNo0
+    CP C
+    JP Z,@stdszllibLeftShift32BitNo0
+    RET
+    @stdszllibLeftShift32BitNo0
+    DEC BC
+    SLA E
+    RL D
+    RL L
+    RL H
+    JP @stdszllibLeftShift32BitLoop
+
+;Performs right shift on a 16-bit value.
+@stdszllib_right_shift_16bit
+    XOR A
+    @stdszllibRightShift16BitLoop
+    CP D
+    JP NZ,@stdszllibRightShift16BitNo0
+    CP E
+    JP Z,@stdszllibRightShift16BitNo0
+    RET
+    @stdszllibRightShift16BitNo0
+    DEC DE
+    SRL H
+    RR L
+    JP @stdszllibRightShift16BitLoop
+
+;Performs right shift on a 32-bit value.
+@stdszllib_right_shift_32bit
+    XOR A
+    @stdszllibRightShift32BitLoop
+    CP B
+    JP NZ,@stdszllibRightShift32BitNo0
+    CP C
+    JP Z,@stdszllibRightShift32BitNo0
+    RET
+    @stdszllibRightShift32BitNo0
+    DEC BC
+    SRL H
+    RR L
+    RR D
+    RR E
+    JP @stdszllibRightShift32BitLoop
+
+;Compares two 32-bit values. Returns higher value in HLDE, lower in BCB'C'.
+@stdszllib_get_long_minmax
+    LD A,B
+    CP H
+    JP Z,@stdszllibGetLongMinmaxEq1     ;Equal
+    JP NC,@stdszllibGetLongMinmax2nd    ;BCB'C' is higher
+    RET                                 ;HLDE is higher
+    @stdszllibGetLongMinmax2nd
+    ;BCB'C' is higher
+    PUSH DE
+    EXX
+    POP DE
+    PUSH BC
+    LD B,D
+    LD C,E
+    EXX
+    POP DE
+    LD A,H
+    LD H,B
+    LD B,A
+    LD A,L
+    LD L,C
+    LD C,A
+    RET
+    ;Equal
+    @stdszllibGetLongMinmaxEq1
+    LD A,C
+    CP L
+    JP Z,@stdszllibGetLongMinmaxEq2     ;Equal
+    JP NC,@stdszllibGetLongMinmax2nd    ;BCB'C' is higher
+    RET                                 ;HLDE is higher
+    ;Equal
+    @stdszllibGetLongMinmaxEq2
+    EXX
+    LD A,B
+    EXX
+    CP D
+    JP Z,@stdszllibGetLongMinmaxEq3     ;Equal
+    JP NC,@stdszllibGetLongMinmax2nd    ;BCB'C' is higher
+    RET                                 ;HLDE is higher
+    ;Equal
+    @stdszllibGetLongMinmaxEq3
+    EXX
+    CP C
+    EXX
+    CP E
+    JP NC,@stdszllibGetLongMinmax2nd    ;BCB'C' is higher
+    RET                                 ;HLDE is higher
+
+;Compares two 16-bit values. Returns higher value in HL, lower in DE.
+@stdszllib_get_minmax
+    LD A,D
+    CP H
+    JP Z,@stdszllibGetMinmaxEq          ;Equal
+    JP NC,@stdszllibGetMinmax2nd        ;DE is higher
+    RET                                 ;HL is higher
+    @stdszllibGetMinmax2nd
+    EX DE,HL
+    RET
+    @stdszllibGetMinmaxEq
+    LD A,E
+    CP L
+    JP NC,@stdszllibGetMinmax2nd        ;DE is higher
+    RET                                 ;HL is higher
+
+;Compares two 16-bit values. Returns true if they are equal, false otherwise.
+@stdszllib_equal_16bit
+    OR A
+    SBC HL,DE
+    JP NZ,@stdszllibEqual16bitRet0
+    LD HL,%1
+    @stdszllibEqual16bitRet0
+    RET
+
+;Compares two 32-bit values. Returns true if they are equal, false otherwise.
+@stdszllib_equal_32bit
+    OR A
+    SBC HL,DE
+    JP NZ,@stdszllibEqual32bitRet0
+    EXX
+    LD A,B
+    EXX
+    LD H,A
+    EXX
+    LD A,C
+    EXX
+    LD L,A
+    OR A
+    SBC HL,BC
+    JP NZ,@stdszllibEqual32bitRet0
+    LD HL,%1
+    @stdszllibEqual32bitRet0
+    RET                               ;HL is higher
+
+;Compares two boolean values. Returns true if they are equal, false otherwise.
+@stdszllib_equal_bool
+    CALL @stdszllib_xor_bool
+    CALL @stdszllib_negation_16bit
+    RET
+
+;Compares two 16-bit values. Returns true if they are not equal, false otherwise.
+@stdszllib_not_equal_16bit
+    OR A
+    SBC HL,DE
+    JP Z,@stdszllibNotEqual16bitRet0
+    LD HL,%1
+    @stdszllibNotEqual16bitRet0
+    RET
+
+;Compares two 32-bit values. Returns true if they are not equal, false otherwise.
+@stdszllib_not_equal_32bit
+    OR A
+    SBC HL,DE
+    JP NZ,@stdszllibNotEqual32bitRet1
+    EXX
+    LD A,B
+    EXX
+    LD H,A
+    EXX
+    LD A,C
+    EXX
+    LD L,A
+    OR A
+    SBC HL,BC
+    JP NZ,@stdszllibNotEqual32bitRet1
+    LD HL,%0
+    RET
+    @stdszllibNotEqual32bitRet1
+    LD HL,%1
+    RET
+
+;Returns absolute values of Int1 and Int2 and A = 0 if exactly one inversion was performed, or A = 1 if both or none inversions were performed.
+@stdszllib_absolute_pair_int
+    BIT 7,H
+    JP Z,@stdszllibAbsolutePairIntPX
+    BIT 7,D         ;Int1 is negative
+    JP Z,@stdszllibAbsolutePairIntNP
+    OR A            ;Int1 is negative, Int2 is negative
+    LD B,H
+    LD C,L
+    LD HL,%0
+    SBC HL,BC
+    LD B,D
+    LD C,E
+    EX DE,HL
+    LD HL,%0
+    OR A
+    SBC HL,BC
+    LD A,%1
+    EX DE,HL
+    RET
+    @stdszllibAbsolutePairIntNP         ;Int1 is negative, Int2 is positive
+    LD B,H
+    LD C,L
+    LD HL,%0
+    XOR A
+    SBC HL,BC
+    RET
+    @stdszllibAbsolutePairIntPX
+    BIT 7,D                             ;Int1 is positive
+    JP Z,@stdszllibAbsolutePairIntPP    ;Int1 is positive, Int2 is positive
+    LD B,D                              ;Int1 is positive, Int2 is negative
+    LD C,E
+    EX DE,HL
+    LD HL,%0
+    XOR A
+    SBC HL,BC
+    EX DE,HL
+    RET
+    @stdszllibAbsolutePairIntPP
+    LD A,%1
+    RET
+
+;Returns absolute values of Long1 and Long2 and A = 0 if exactly one inversion was performed, or A = 1 if both or none inversions were performed.
+@stdszllib_absolute_pair_long
+    BIT 7,H
+    JP Z,@stdszllibAbsolutePairLongPX
+    BIT 7,B                 ;Long1 is negative
+    JP Z,@stdszllibAbsolutePairLongNP
+    OR A                    ;Long1 is negative, Int2 is negative
+    PUSH HL
+    LD HL,%0
+    SBC HL,DE
+    POP DE
+    PUSH HL
+    LD HL,%0
+    SBC HL,DE
+    PUSH HL
+    OR A
+    LD HL,%0
+    EXX
+    PUSH BC
+    EXX
+    POP DE
+    SBC HL,DE
+    PUSH HL
+    LD HL,%0
+    SBC HL,BC
+    LD B,H
+    LD C,L
+    EXX
+    POP BC
+    EXX
+    POP HL
+    POP DE
+    LD A,%1
+    RET
+    @stdszllibAbsolutePairLongPX
+    BIT 7,B                 ;Long1 is positive
+    JP Z,@stdszllibAbsolutePairLongPP
+    OR A                    ;Long1 is positive, Long2 is negative
+    PUSH HL
+    PUSH BC
+    EXX
+    PUSH BC
+    EXX
+    POP BC
+    LD HL,%0
+    SBC HL,BC
+    PUSH HL
+    EXX
+    POP BC
+    EXX
+    POP BC
+    LD HL,%0
+    SBC HL,BC
+    LD B,H
+    LD C,L
+    POP HL
+    XOR A
+    RET
+    @stdszllibAbsolutePairLongNP
+    OR A                    ;Long1 is negative, Long2 is positive
+    PUSH HL
+    LD HL,%0
+    SBC HL,DE
+    POP DE
+    PUSH HL
+    LD HL,%0
+    SBC HL,DE
+    POP DE
+    XOR A
+    RET
+    @stdszllibAbsolutePairLongPP
+    LD A,%1
+    RET
+
+;Multiplies two unsigned longs.
+@stdszllib_multiply_ulong
+    CALL @stdszllib_get_long_minmax
+    PUSH BC
+    PUSH HL
+    EXX
+    PUSH BC
+    EXX
+    LD HL,%0
+    OR A
+    ADC HL,BC
+    POP BC
+    JP NZ,@stdszllibMultiplyUlongNo0    ;Check if multiplying by 0
+    LD HL,%0
+    OR A
+    ADC HL,BC
+    JP NZ,@stdszllibMultiplyUlongNo0    ;Check if multiplying by 0
+    POP HL
+    POP BC
+    LD HL,%0
+    LD DE,%0
+    RET   
+    @stdszllibMultiplyUlongNo0
+    PUSH DE
+    LD HL,#2
+    ADD HL,SP
+    LD A,(HL)
+    INC HL
+    LD H,(HL)
+    LD L,A
+    LD B,H
+    LD C,L
+    XOR A
+    @stdszllibMultiplyUlongLoop
+    EXX
+    DEC BC
+    CP B
+    EXX
+    JP NZ,@stdszllibMultiplyUlongSkipCp
+    EXX
+    CP C
+    EXX
+    JP Z,@stdszllibMultiplyUlongSkipAdc
+    @stdszllibMultiplyUlongSkipCp
+    POP HL
+    ADD HL,DE
+    PUSH HL
+    EX AF,AF'
+    LD HL,#2
+    ADD HL,SP
+    LD A,(HL)
+    INC HL
+    LD H,(HL)
+    LD L,A
+    EX AF,AF'
+    ADC HL,BC
+    PUSH BC
+    LD B,H
+    LD C,L
+    LD HL,#4
+    ADD HL,SP
+    LD (HL),C
+    INC HL
+    LD (HL),B
+    POP BC
+    JP @stdszllibMultiplyUlongLoop
+    @stdszllibMultiplyUlongSkipAdc
+    PUSH BC
+    LD HL,#6
+    ADD HL,SP
+    LD C,(HL)
+    INC HL
+    LD B,(HL)
+    LD H,B
+    LD L,C
+    LD BC,#1
+    OR A
+    SBC HL,BC
+    EX AF,AF'
+    LD B,H
+    LD C,L
+    LD HL,#6
+    ADD HL,SP
+    LD (HL),C
+    INC HL
+    LD (HL),B
+    EX AF,AF'
+    POP BC
+    JP NC,@stdszllibMultiplyUlongLoop
+    POP DE
+    POP HL
+    POP BC
+    RET
+
+;Multiplies two signed longs.
+@stdszllib_multiply_long
+    CALL @stdszllib_absolute_pair_long
+    CP %0
+    EX AF,AF'
+    CALL @stdszllib_multiply_ulong
+    EX AF,AF'
+    JP NZ,@stdszllibMultiplyLongNoInv
+    ;Invert result
+    LD B,H
+    LD C,L
+    LD HL,%0
+    OR A
+    SBC HL,DE
+    EX DE,HL
+    LD HL,%0
+    SBC HL,BC
+    @stdszllibMultiplyLongNoInv
+    RET
+
+;Multiplies two unsigned integers.
+@stdszllib_multiply_uint
+    CALL @stdszllib_get_minmax
+    LD A,D
+    OR A
+    JP NZ,@stdszllibMultiplyUintNo0
+    LD A,E
+    OR A
+    JP NZ,@stdszllibMultiplyUintNo0
+    LD HL,%0
+    RET
+    @stdszllibMultiplyUintNo0
+    XOR A
+    LD B,H
+    LD C,L
+    @stdszllibMultiplyUintLoop
+    DEC DE
+    CP D
+    JP NZ,@stdszllibMultiplyUintSkipCp
+    CP E
+    JP Z,@stdszllibMultiplyUintEnd
+    @stdszllibMultiplyUintSkipCp
+    ADD HL,BC
+    JP @stdszllibMultiplyUintLoop
+    @stdszllibMultiplyUintEnd
+    RET
+
+;Multiplies two signed integers.
+@stdszllib_multiply_int
+    CALL @stdszllib_absolute_pair_int
+    CP %0
+    EX AF,AF'
+    CALL @stdszllib_multiply_uint
+    EX AF,AF'
+    JP NZ,@stdszllibMultiplyIntNoInv
+    ;Invert result
+    EX DE,HL
+    LD HL,%0
+    OR A
+    SBC HL,DE
+    @stdszllibMultiplyIntNoInv
+    RET
+
+;Divides two unsigned integers. Also returns remainder.
+@stdszllib_divide_uint
+    XOR A
+    CP D
+    JP NZ,@stdszllibDivideUintNo0
+    CP E
+    JP NZ,@stdszllibDivideUintNo0
+    LD HL,$FFFF
+    LD DE,$FFFF
+    RET
+    @stdszllibDivideUintNo0
+    LD BC,%0
+    OR A
+    ;Loop
+    @stdszllibDivideUintLoop
+    SBC HL,DE
+    JP Z,@stdszllibDivideUintFull
+    JP C,@stdszllibDivideUintRemainder
+    INC BC
+    JP @stdszllibDivideUintLoop
+    @stdszllibDivideUintRemainder
+    ADD HL,DE
+    LD D,H
+    LD E,L
+    LD H,B
+    LD L,C
+    RET
+    @stdszllibDivideUintFull
+    INC BC
+    LD H,B
+    LD L,C
+    LD DE,%0
+    RET
+
+;Divides two signed integers. Also returns remainder.
+@stdszllib_divide_int
+    CALL @stdszllib_absolute_pair_int
+    CP %0
+    EX AF,AF'
+    CALL @stdszllib_divide_uint
+    EX AF,AF'
+    JP NZ,@stdszllibDivideIntNoInv
+    OR A
+    LD B,H
+    LD C,L
+    LD HL,%0
+    SBC HL,DE
+    LD D,H
+    LD E,L
+    OR A
+    LD HL,%0
+    SBC HL,BC
+    @stdszllibDivideIntNoInv
+    RET
+
+;Divides two unsigned longs. Also returns remainder.
+@stdszllib_divide_ulong
+    PUSH BC         ;Move Long2 to memory
+    EXX
+    PUSH BC
+    EXX
+    XOR A
+    CP B
+    JP NZ,@stdszllibDivideUlongNo0
+    CP C
+    JP NZ,@stdszllibDivideUlongNo0
+    POP BC
+    PUSH BC
+    CP B
+    JP NZ,@stdszllibDivideUlongNo0
+    CP C
+    JP NZ,@stdszllibDivideUlongNo0
+    POP BC
+    POP BC
+    LD HL,$FFFF
+    LD DE,$FFFF
+    LD BC,$FFFF
+    EXX
+    LD BC,$FFFF
+    EXX
+    RET
+    @stdszllibDivideUlongNo0
+    PUSH HL
+    LD HL,#2
+    ADD HL,SP
+    PUSH HL
+    POP IX
+    POP HL
+    ;At this point IX will point to the lower half of Long2 in memory
+    EXX
+    PUSH HL
+    PUSH DE
+    PUSH BC
+    LD HL,%0        ;Set result to 0 (DEHL)
+    LD DE,%0
+    LD BC,%1        ;Prepare for incrementation
+    EXX
+    ;Loop
+    @stdszllibDivideUlongLoop
+    OR A
+    LD A,E
+    SBC A,(IX+#0)
+    LD E,A
+    LD A,D
+    SBC A,(IX+#1)
+    LD D,A
+    LD A,L
+    SBC A,(IX+#2)
+    LD L,A
+    LD A,H
+    SBC A,(IX+#3)
+    LD H,A
+    JP C,@stdszllibDivideUlongRemainder
+    EXX
+    ADD HL,BC
+    JP NC,@stdszllibDivideUlongSkipInc
+    PUSH HL
+    EX DE,HL
+    ADD HL,BC
+    EX DE,HL
+    POP HL
+    @stdszllibDivideUlongSkipInc
+    EXX
+    XOR A
+    CP H
+    JP NZ,@stdszllibDivideUlongLoop
+    CP L
+    JP NZ,@stdszllibDivideUlongLoop
+    CP D
+    JP NZ,@stdszllibDivideUlongLoop
+    CP E
+    JP NZ,@stdszllibDivideUlongLoop
+    ;No remainder
+    LD BC,%0
+    PUSH BC
+    EXX
+    POP BC
+    @stdszllibDivideUlongEnd
+    PUSH HL
+    PUSH DE
+    EXX
+    POP HL
+    POP DE
+    EXX
+    POP DE
+    POP DE
+    POP HL
+    EXX
+    POP AF
+    POP AF
+    POP AF
+    RET
+    @stdszllibDivideUlongRemainder
+    ;Remainder
+    LD A,E
+    ADD A,(IX+#0)
+    LD C,A
+    LD A,D
+    ADC A,(IX+#1)
+    LD B,A
+    PUSH BC
+    LD A,L
+    ADC A,(IX+#2)
+    LD C,A
+    LD A,H
+    ADC A,(IX+#3)
+    LD B,A
+    POP IX
+    JP @stdszllibDivideUlongEnd
+
+;Divides two signed longs. Also returns remainder.
+@stdszllib_divide_long
+    CALL @stdszllib_absolute_pair_long
+    CP %0
+    EX AF,AF'
+    CALL @stdszllib_divide_ulong
+    EX AF,AF'
+    JP NZ,@stdszllibDivideLongNoInv
+    ;Invert result
+    PUSH HL
+    PUSH DE
+    LD HL,%0
+    PUSH IX
+    POP DE
+    OR A
+    SBC HL,DE
+    PUSH HL
+    POP IX
+    LD HL,%0
+    SBC HL,BC
+    LD B,H
+    LD C,L
+    LD HL,%0
+    POP DE
+    OR A
+    SBC HL,DE
+    EX DE,HL
+    POP HL
+    PUSH DE
+    EX DE,HL
+    LD HL,%0
+    SBC HL,DE
+    POP DE
+    RET
+    ;Do not invert result
+    @stdszllibDivideLongNoInv
+    RET
+
+;Adds two 32-bit values.
+@stdszllib_add_32bit
+    PUSH HL
+    EXX
+    LD A,B
+    EXX
+    LD H,A
+    EXX
+    LD A,C
+    EXX
+    LD L,A
+    ADD HL,DE
+    EX DE,HL
+    LD H,B
+    LD L,C
+    POP BC
+    ADC HL,BC
+    RET
+
+;Subtracts two 32-bit values.
+@stdszllib_subtract_32bit
+    PUSH HL
+    EXX
+    LD A,B
+    EXX
+    LD H,A
+    EXX
+    LD A,C
+    EXX
+    LD L,A
+    OR A
+    SBC HL,DE
+    EX DE,HL
+    LD H,B
+    LD L,C
+    POP BC
+    SBC HL,BC
+    RET
+
+;Performs greater comparison between two uint values.
+@stdszllib_greater_uint
+    OR A
+    EX DE,HL
+    SBC HL,DE
+    JP C,@stdszllibGreaterUintRet1
+    LD HL,%0
+    RET
+    @stdszllibGreaterUintRet1
+    LD HL,%1
+    RET
+
+;Performs greater comparison between two int values.
+@stdszllib_greater_int
+    BIT 7,H
+    JP Z,@stdszllibGreaterIntPX
+    BIT 7,D
+    JP Z,@stdszllibGreaterIntRet0
+    CALL @stdszllib_absolute_pair_int
+    CALL @stdszllib_less_uint
+    RET
+    @stdszllibGreaterIntRet0
+    LD HL,%0
+    RET
+    @stdszllibGreaterIntPX
+    BIT 7,D
+    JP NZ,@stdszllibGreaterIntRet1
+    CALL @stdszllib_greater_uint
+    RET
+    @stdszllibGreaterIntRet1
+    LD HL,%1
+    RET
+
+;Performs greater comparison between two ulong values.
+@stdszllib_greater_ulong
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibGreaterUlongEqual
+    JP NC,@stdszllibGreaterUlongRet1
+    @stdszllibGreaterUlongRet0
+    LD HL,%0
+    RET
+    @stdszllibGreaterUlongEqual
+    EX DE,HL
+    EXX
+    LD A,B
+    EXX
+    LD B,A
+    EXX
+    LD A,C
+    EXX
+    LD C,A
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibGreaterUlongRet0
+    JP C,@stdszllibGreaterUlongRet0
+    @stdszllibGreaterUlongRet1
+    LD HL,%1
+    RET
+
+;Performs greater comparison between two long values.
+@stdszllib_greater_long
+    BIT 7,H
+    JP Z,@stdszllibGreaterLongPX
+    BIT 7,B
+    JP Z,@stdszllibGreaterLongRet0
+    CALL stdszllib_absolute_pair_long
+    CALL stdszllib_less_ulong
+    RET
+    @stdszllibGreaterLongPX
+    BIT 7,B
+    JP NZ,@stdszllibGreaterLongRet1
+    CALL stdszllib_greater_ulong
+    RET
+    @stdszllibGreaterLongRet0
+    LD HL,%0
+    RET
+    @stdszllibGreaterLongRet1
+    LD HL,%1
+    RET
+
+;Performs greater or equal comparison between two uint values.
+@stdszllib_greater_or_equal_uint
+    OR A
+    EX DE,HL
+    SBC HL,DE
+    JP C,@stdszllibGreaterOrEqualUintRet1
+    JP Z,@stdszllibGreaterOrEqualUintRet1
+    LD HL,%0
+    RET
+    @stdszllibGreaterOrEqualUintRet1
+    LD HL,%1
+    RET
+
+;Performs greater or equal comparison between two int values.
+@stdszllib_greater_or_equal_int
+    BIT 7,H
+    JP Z,@stdszllibGreaterOrEqualIntPX
+    BIT 7,D
+    JP Z,@stdszllibGreaterOrEqualIntRet0
+    CALL @stdszllib_absolute_pair_int
+    CALL @stdszllib_less_or_equal_uint
+    RET
+    @stdszllibGreaterOrEqualIntRet0
+    LD HL,%0
+    RET
+    @stdszllibGreaterOrEqualIntPX
+    BIT 7,D
+    JP NZ,@stdszllibGreaterOrEqualIntRet1
+    CALL @stdszllib_greater_or_equal_uint
+    RET
+    @stdszllibGreaterOrEqualIntRet1
+    LD HL,%1
+    RET
+
+;Performs greater or equal comparison between two ulong values.
+@stdszllib_greater_or_equal_ulong
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibGreaterOrEqualUlongEqual
+    JP NC,@stdszllibGreaterOrEqualUlongRet1
+    @stdszllibGreaterUlongRet0
+    LD HL,%0
+    RET
+    @stdszllibGreaterOrEqualUlongEqual
+    EX DE,HL
+    EXX
+    LD A,B
+    EXX
+    LD B,A
+    EXX
+    LD A,C
+    EXX
+    LD C,A
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibGreaterOrEqualUlongRet1
+    JP C,@stdszllibGreaterOrEqualUlongRet0
+    @stdszllibGreaterOrEqualUlongRet1
+    LD HL,%1
+    RET
+
+;Performs greater or equal comparison between two long values.
+@stdszllib_greater_or_equal_long
+    BIT 7,H
+    JP Z,@stdszllibGreaterOrEqualLongPX
+    BIT 7,B
+    JP Z,@stdszllibGreaterOrEqualLongRet0
+    CALL stdszllib_absolute_pair_long
+    CALL stdszllib_less_or_equal_ulong
+    RET
+    @stdszllibGreaterOrEqualLongPX
+    BIT 7,B
+    JP NZ,@stdszllibGreaterOrEqualLongRet1
+    CALL stdszllib_greater_or_equal_ulong
+    RET
+    @stdszllibGreaterOrEqualLongRet0
+    LD HL,%0
+    RET
+    @stdszllibGreaterOrEqualLongRet1
+    LD HL,%1
+    RET
+
+;Performs less or equal comparison between two uint values.
+@stdszllib_less_or_equal_uint
+    OR A
+    SBC HL,DE
+    JP C,@stdszllibLessOrEqualUintRet1
+    JP Z,@stdszllibLessOrEqualUintRet1
+    LD HL,%0
+    RET
+    @stdszllibLessOrEqualUintRet1
+    LD HL,%1
+    RET
+
+;Performs less or equal comparison between two int values.
+@stdszllib_less_or_equal_int
+    BIT 7,H
+    JP Z,@stdszllibLessOrEqualIntPX
+    BIT 7,D
+    JP Z,@stdszllibLessOrEqualIntRet1
+    CALL @stdszllib_absolute_pair_int
+    OR A
+    SBC HL,DE
+    JP Z,@stdszllibLessOrEqualIntRet1
+    ADD HL,DE
+    CALL @stdszllib_greater_uint
+    RET
+    @stdszllibLessOrEqualIntRet0
+    LD HL,%0
+    RET
+    @stdszllibLessOrEqualIntPX
+    BIT 7,D
+    JP NZ,@stdszllibLessOrEqualIntRet0
+    CALL @stdszllib_less_or_equal_uint
+    RET
+    @stdszllibLessOrEqualIntRet1
+    LD HL,%1
+    RET
+
+;Performs less or equal comparison between two ulong values.
+@stdszllib_less_or_equal_ulong
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibLessOrEqualUlongEqual
+    JP NC,@stdszllibLessOrEqualUlongRet0
+    @stdszllibLessOrEqualUlongRet1
+    LD HL,%1
+    RET
+    @stdszllibLessOrEqualUlongEqual
+    EX DE,HL
+    EXX
+    LD A,B
+    EXX
+    LD B,A
+    EXX
+    LD A,C
+    EXX
+    LD C,A
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibLessOrEqualUlongRet1
+    JP C,@stdszllibLessOrEqualUlongRet1
+    @stdszllibLessOrEqualUlongRet0
+    LD HL,%0
+    RET
+
+
+;Performs less or equal comparison between two long values.
+@stdszllib_less_or_equal_long
+    BIT 7,H
+    JP Z,@stdszllibLessOrEqualLongPX
+    BIT 7,B
+    JP Z,@stdszllibLessOrEqualLongRet1
+    CALL stdszllib_absolute_pair_long
+    OR A
+    SBC HL,BC
+    EX AF,AF'
+    ADD HL,BC
+    EX AF,AF'
+    JP NZ,@stdszllibLessOrEqualLongNoEq
+    EXX
+    LD A,B
+    EXX
+    CP D
+    JP NZ,@stdszllibLessOrEqualLongNoEq
+    EXX
+    LD A,C
+    EXX
+    CP E
+    JP Z,@stdszllibLessOrEqualLongRet1
+    @stdszllibLessOrEqualLongNoEq
+    CALL stdszllib_greater_ulong
+    RET
+    @stdszllibLessOrEqualLongPX
+    BIT 7,B
+    JP NZ,@stdszllibLessOrEqualLongRet0
+    CALL stdszllib_less_or_equal_ulong
+    RET
+    @stdszllibLessOrEqualLongRet0
+    LD HL,%0
+    RET
+    @stdszllibLessOrEqualLongRet1
+    LD HL,%1
+    RET
+
+;Performs less comparison between two uint values.
+@stdszllib_less_uint
+    OR A
+    SBC HL,DE
+    JP C,@stdszllibLessUintRet1
+    LD HL,%0
+    RET
+    @stdszllibLessUintRet1
+    LD HL,%1
+    RET
+
+;Performs less comparison between two int values.
+@stdszllib_less_int
+    BIT 7,H
+    JP Z,@stdszllibLessIntPX
+    BIT 7,D
+    JP Z,@stdszllibLessIntRet1
+    CALL @stdszllib_absolute_pair_int
+    CALL @stdszllib_greater_uint
+    RET
+    @stdszllibLessIntRet0
+    LD HL,%0
+    RET
+    @stdszllibLessIntPX
+    BIT 7,D
+    JP NZ,@stdszllibLessIntRet0
+    CALL @stdszllib_less_uint
+    RET
+    @stdszllibLessIntRet1
+    LD HL,%1
+    RET
+
+;Performs less comparison between two ulong values.
+@stdszllib_less_ulong
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibLessUlongEqual
+    JP NC,@stdszllibLessUlongRet0
+    @stdszllibLessUlongRet1
+    LD HL,%1
+    RET
+    @stdszllibLessUlongEqual
+    EX DE,HL
+    EXX
+    LD A,B
+    EXX
+    LD B,A
+    EXX
+    LD A,C
+    EXX
+    LD C,A
+    OR A
+    SBC HL,BC
+    JP Z,@stdszllibLessUlongRet0
+    JP C,@stdszllibLessUlongRet1
+    @stdszllibLessUlongRet0
+    LD HL,%0
+    RET
+
+
+;Performs less comparison between two long values.
+@stdszllib_less_long
+    BIT 7,H
+    JP Z,@stdszllibLessLongPX
+    BIT 7,B
+    JP Z,@stdszllibLessLongRet1
+    CALL stdszllib_absolute_pair_long
+    CALL stdszllib_greater_ulong
+    RET
+    @stdszllibLessLongPX
+    BIT 7,B
+    JP NZ,@stdszllibLessLongRet0
+    CALL stdszllib_less_ulong
+    RET
+    @stdszllibLessLongRet0
+    LD HL,%0
+    RET
+    @stdszllibLessLongRet1
+    LD HL,%1
+    RET
+
+;Float1 in HLDE, Float2 in BCIX, Operation in A (0 for addition, 1 for subtraction)
+@stdszllib_add_sub_floats
+                    ;Initial checks
+    BIT 7,H
+    JP Z,%          ;Float 1 is positive
+    BIT 7,B         ;Float 1 is negative
+    JP Z,%          ;Float 2 is positive
+                    ;Float 1 is negative, float 2 is negative
+    BIT 0,A
+    JP NZ,%         ;Variant for subtraction
+    SET 7,H         ;Variant for addition
+    SET 7,B
+    JP %
+                    ;Variant for subtraction
+                    ;Float 1 is negative, float 2 is positive
+    XOR $FF
+    RES 7,B
+    JP %
+                    ;Float 1 is positive
+    BIT 7,B
+    JP Z,%          ;Float 2 is positive
+                    ;Float 1 is positive, float 2 is negative
+    XOR $FF
+    RES 7,B
+    JP %
+                    ;Float 1 is positive, float 2 is positive
+    BIT 0,A
+    JP Z,%          ;No changes needed
+                    ;Variant for subtraction
+    JP %
+
+                    ;Save data
+    PUSH AF
+    PUSH HL
     PUSH DE
     PUSH BC
     PUSH IX
@@ -96,7 +1445,7 @@
     RL C
     RL A
     SUB H           ;Compare exponents
-    JR NZ,%00100010 ;Values not aligned, jump to alignment
+    JP NZ,%00100010 ;Values not aligned, jump to alignment
                     ;Load floats and remove exponents
                     ;Set:
                     ;Float 1 mantissa: DHL
@@ -125,8 +1474,8 @@
     SRL A
     SET 7,D         ;Prepend one to D
     SET 7,A         ;Prepend one to A
-    JR %01010100    ;Jump to calculations
-    JR C,%00101010  ;Jump to align 2
+    JP %01010100    ;Jump to calculations
+    JP C,%00101010  ;Jump to align 2
                     ;Align 1
     ADD A,H          
     PUSH AF         ;Save result exponent
@@ -161,7 +1510,7 @@
     LD D,L
     LD L,E
     SET 7,D         ;Prepend one to D
-    JR %00101000    ;Jump to calculations
+    JP %00101000    ;Jump to calculations
                     ;Align 2       
     PUSH HL         ;Save result exponent
     LD HL,#2        ;Load second float
@@ -196,27 +1545,58 @@
     LD L,E
     SET 7,D         ;Prepend one to D
                     ;Calculations
-    ADD HL,BC
-    ADC A,D
+                    ;First: check operation
+    PUSH HL
+    PUSH AF
+    LD HL,#15
+    ADD HL,SP
+    XOR A
+    CP (HL)
+    JP Z,%00010111  ;Jump to addition
+                    ;Subtraction
+    LD A,D
+    POP DE
+    POP HL
+    AND A
+    SBC HL,BC
+    SBC A,D
+                    ;Check if adjustment if needed
+    AND A
+    BIT 7,A
+    JP NZ,%00010000 ;Jump if adjustment does not need to be applied
+    SLA L
+    RL H
+    RL A
     EX DE,HL        ;Move results to BDE
     LD B,A
-    JR NC,%00001010 ;Jump if result does not need to be adjusted due to carry
+    POP AF
+    DEC A
+    JP %00010011    ;Jump forward
+                    ;Addition
+    POP AF
+    POP HL
+    ADD HL,BC
+    ADC A,D
+                    ;Move results to BDE
+    EX DE,HL
+    LD B,A
+    JP NC,%00001010 ;Jump if result does not need to be adjusted due to carry
     SRL B
     RR  D
     RR  E
     POP AF
     INC A
-    JR %00000001    ;Jump over next POP AF
+    JP %00000001    ;Jump over next POP AF
     POP AF
-    ;Set results: BCDE
+                    ;Set results: BCDE
     LD C,B
     SRL A
     LD B,A
-    JR C,%00000010  ;Jump to set MSB in C to 1, otherwise set to 0
+    JP C,%00000010  ;Jump to set MSB in C to 1, otherwise set to 0
     RES 7,C
-    JR %00000010
+    JP %00000010
     SET 7,C
-    LD HL,#8        ;The end: clean up stack, move results to HLDE
+    LD HL,#10       ;The end: clean up stack, move results to HLDE
     ADD HL,SP
     LD SP,HL
     LD H,B
