@@ -11,21 +11,18 @@ namespace szl
     class RuleKeyword : public szl::Rule
     {
         std::unordered_set<std::string> keywords{
-            "+", "-", "/", "*",
-            "%",
-            "~", "&", "|", "^", "<<", ">>",
-            "!", "&&", "||", "^^",
-            "=", "+=", "-=", "*=", "/=", "~=", "&=", "|=", "^=",
+            "+", "-", "/", "*", "%",
+            "~", "&", "|", "^", "<<", ">>", "!",
+            "=",
             "!=", "==", "<", ">", "<=", ">=",
+            "if", "for", "while",
             "int", "uint", "long", "ulong",
             "bool", "float", "char", "string",
-            "array", "list", "map",
-            "struct", "class",
-            "if", "for", "while", "?", "?:",
-            "inline", "void", "static",
+            "array", "list",
+            "struct",
+            "void",
             "in", "out",
-            "lock", "unlock",
-            "::",
+            "lock();", "unlock();",
             "return"};
 
     public:
