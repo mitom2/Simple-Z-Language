@@ -51,23 +51,24 @@ std::vector<szl::Token> szl::tokenize(const std::string &code)
 void szl::compile(const std::string &in, const std::string &out)
 {
     auto program = tokenize(loadFile(in));
-    szl::Grammar grammar(true);
+    szl::Grammar grammar;
+    grammar.initialize();
+    // TODO: set program name using preprocessor
+    szl::programData["name"] = "program";
     std::string res;
     {
-        szl::Scope scope(2, &res);
+        std::list<szl::Scope> scopes;
+        scopes.emplace_back(12, &res);
         for (std::size_t i = 0; i < program.size();)
         {
-            bool matched = false;
             std::vector<std::string> internal;
-            auto code = grammar.execute(program, i, scope, internal);
+            auto code = grammar.execute(program, i, scopes, internal);
             if (code != "")
             {
                 res += code;
-                matched = true;
                 continue;
             }
-            if (!matched)
-                throw szl::SZLException("Syntax error");
+            throw szl::SZLException("Syntax error");
         }
     }
     std::cout << res << " " << std::endl;
