@@ -193,13 +193,12 @@
     LD A,H
     ADD A,L
     CP %0
-    JP NZ,@stdszllibOrBoolRet1
+    RET NZ
     LD A,D
     ADD A,E
     CP %0
     JP Z,@stdszllibOrBoolRet0
     LD HL,%1
-    @stdszllibOrBoolRet1
     RET
     @stdszllibOrBoolRet0
     LD HL,%0
@@ -240,13 +239,12 @@
     LD A,H
     ADD A,L
     CP %0
-    JP Z,@stdszllibAndBoolRet0
+    RET Z
     LD A,D
     ADD A,E
     CP %0
     JP NZ,@stdszllibAndBoolRet1
     LD HL,%0
-    @stdszllibAndBoolRet0
     RET
     @stdszllibAndBoolRet1
     LD HL,%1
@@ -454,8 +452,7 @@
     LD A,D
     CP H
     JP Z,@stdszllibGetMinmaxEq          ;Equal
-    JP NC,@stdszllibGetMinmax2nd        ;DE is higher
-    RET                                 ;HL is higher
+    RET C
     @stdszllibGetMinmax2nd
     EX DE,HL
     RET
@@ -471,7 +468,9 @@
     SBC HL,DE
     JP NZ,@stdszllibEqual16bitRet0
     LD HL,%1
+    RET
     @stdszllibEqual16bitRet0
+    LD HL,%0
     RET
 
 ;Compares two 32-bit values. Returns true if they are equal, false otherwise.
@@ -491,7 +490,9 @@
     SBC HL,BC
     JP NZ,@stdszllibEqual32bitRet0
     LD HL,%1
+    RET
     @stdszllibEqual32bitRet0
+    LD HL,%0
     RET                               ;HL is higher
 
 ;Compares two boolean values. Returns true if they are equal, false otherwise.
@@ -504,9 +505,8 @@
 @stdszllib_not_equal_16bit
     OR A
     SBC HL,DE
-    JP Z,@stdszllibNotEqual16bitRet0
+    RET Z
     LD HL,%1
-    @stdszllibNotEqual16bitRet0
     RET
 
 ;Compares two 32-bit values. Returns true if they are not equal, false otherwise.
@@ -524,9 +524,7 @@
     LD L,A
     OR A
     SBC HL,BC
-    JP NZ,@stdszllibNotEqual32bitRet1
-    LD HL,%0
-    RET
+    RET Z
     @stdszllibNotEqual32bitRet1
     LD HL,%1
     RET
@@ -748,7 +746,7 @@
     EX AF,AF'
     CALL @stdszllib_multiply_ulong
     EX AF,AF'
-    JP NZ,@stdszllibMultiplyLongNoInv
+    RET NZ
     ;Invert result
     LD B,H
     LD C,L
@@ -781,12 +779,10 @@
     CP D
     JP NZ,@stdszllibMultiplyUintSkipCp
     CP E
-    JP Z,@stdszllibMultiplyUintEnd
+    RET Z
     @stdszllibMultiplyUintSkipCp
     ADD HL,BC
     JP @stdszllibMultiplyUintLoop
-    @stdszllibMultiplyUintEnd
-    RET
 
 ;Multiplies two signed integers.
 @stdszllib_multiply_int
@@ -795,14 +791,12 @@
     EX AF,AF'
     CALL @stdszllib_multiply_uint
     EX AF,AF'
-    JP NZ,@stdszllibMultiplyIntNoInv
+    RET NZ
     ;Invert result
     EX DE,HL
     LD HL,%0
     OR A
     SBC HL,DE
-    @stdszllibMultiplyIntNoInv
-    RET
 
 ;Divides two unsigned integers. Also returns remainder.
 @stdszllib_divide_uint
@@ -845,7 +839,7 @@
     EX AF,AF'
     CALL @stdszllib_divide_uint
     EX AF,AF'
-    JP NZ,@stdszllibDivideIntNoInv
+    RET NZ
     OR A
     LD B,H
     LD C,L
@@ -856,7 +850,6 @@
     OR A
     LD HL,%0
     SBC HL,BC
-    @stdszllibDivideIntNoInv
     RET
 
 ;Divides two unsigned longs. Also returns remainder.
@@ -981,7 +974,7 @@
     EX AF,AF'
     CALL @stdszllib_divide_ulong
     EX AF,AF'
-    JP NZ,@stdszllibDivideLongNoInv
+    RET NZ
     ;Invert result
     PUSH HL
     PUSH DE
@@ -1007,9 +1000,6 @@
     LD HL,%0
     SBC HL,DE
     POP DE
-    RET
-    ;Do not invert result
-    @stdszllibDivideLongNoInv
     RET
 
 ;Adds two 32-bit values.
