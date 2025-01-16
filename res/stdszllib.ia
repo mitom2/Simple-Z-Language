@@ -155,7 +155,7 @@
     LD HL,%1
     RET
     @stdszllibXorBoolRet0
-    LD HL,%1
+    LD HL,%0
     RET
 
 ;Performs bitwise XOR operation on two 16-bit values.
