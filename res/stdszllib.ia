@@ -347,8 +347,7 @@
     CP D
     JP NZ,@stdszllibLeftShift16BitNo0
     CP E
-    JP Z,@stdszllibLeftShift16BitNo0
-    RET
+    RET Z
     @stdszllibLeftShift16BitNo0
     DEC DE
     SLA L
@@ -362,8 +361,7 @@
     CP B
     JP NZ,@stdszllibLeftShift32BitNo0
     CP C
-    JP Z,@stdszllibLeftShift32BitNo0
-    RET
+    RET Z
     @stdszllibLeftShift32BitNo0
     DEC BC
     SLA E
@@ -379,8 +377,7 @@
     CP D
     JP NZ,@stdszllibRightShift16BitNo0
     CP E
-    JP Z,@stdszllibRightShift16BitNo0
-    RET
+    RET Z
     @stdszllibRightShift16BitNo0
     DEC DE
     SRL H
@@ -394,8 +391,7 @@
     CP B
     JP NZ,@stdszllibRightShift32BitNo0
     CP C
-    JP Z,@stdszllibRightShift32BitNo0
-    RET
+    RET Z
     @stdszllibRightShift32BitNo0
     DEC BC
     SRL H
