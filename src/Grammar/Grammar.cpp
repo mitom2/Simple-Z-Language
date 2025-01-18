@@ -319,6 +319,7 @@ void szl::Grammar::initialize()
     addSubRule("unlock");
     addSubRule("out");
     addSubRule("arrow");
+    addSubRule("free");
     for (auto &it : grammars)
     {
         it.second->initialize();
@@ -381,6 +382,8 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("at", new szl::GrammarAt(this));
     grammars.emplace("arrow", new szl::GrammarArrow(this));
     grammars.emplace("questioned at", new szl::GrammarQuestionedAt(this));
+    grammars.emplace("alloc", new szl::GrammarAlloc(this));
+    grammars.emplace("free", new szl::GrammarFree(this));
 }
 
 szl::Grammar::~Grammar()
@@ -479,6 +482,7 @@ void szl::GrammarSingleVariableDeclaration::initialize()
     addSubRule("identifier");
     addSubRule("literal");
     addSubRule("in");
+    addSubRule("alloc");
     addSubRule("function call");
 }
 
@@ -546,6 +550,7 @@ void szl::GrammarAssignment::initialize()
     addSubRule("less or equal");
     addSubRule("identifier");
     addSubRule("literal");
+    addSubRule("alloc");
     addSubRule("function call");
 }
 
@@ -2987,4 +2992,143 @@ szl::GrammarQuestionedAt::GrammarQuestionedAt(Grammar *root) : szl::Grammar(root
 
 void szl::GrammarQuestionedAt::initialize()
 {
+}
+
+std::string szl::GrammarAlloc::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    auto newPos = position;
+    std::string res;
+    if (program[newPos].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[newPos].content != "alloc")
+        return "";
+    if (++newPos >= program.size())
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Bracket)
+        return "";
+    if (program[newPos].content != "(")
+        return "";
+    if (++newPos >= program.size())
+        throw szl::SZLException("Unexpected EOF on alloc");
+    res = executeSubRules(program, position = newPos, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("Alloc expects one parameter");
+    if (internalState.size() < 1)
+        throw szl::SZLException("Alloc expects one parameter");
+    if (internalState.back() != "uint")
+        throw szl::SZLException("Alloc expects uint parameter");
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error on alloc");
+    if (program[position++].content != ")")
+        throw szl::SZLException("Syntax error on alloc");
+    return res + "LD DE," + szl::programData["heap address"] + "\nCALL @stdszllib_alloc\n";
+}
+
+szl::GrammarAlloc::GrammarAlloc(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarAlloc::initialize()
+{
+    addSubRule("questioned at");
+    addSubRule("two literals addition");
+    addSubRule("brackets");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("and");
+    addSubRule("or");
+    addSubRule("xor");
+    addSubRule("modulo");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("identifier");
+    addSubRule("literal");
+    addSubRule("in");
+    addSubRule("function call");
+}
+
+std::string szl::GrammarFree::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    auto newPos = position;
+    std::string res, resL;
+    if (program[newPos].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[newPos].content != "free")
+        return "";
+    if (++newPos >= program.size())
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Bracket)
+        return "";
+    if (program[newPos].content != "(")
+        return "";
+    if (++newPos >= program.size())
+        throw szl::SZLException("Unexpected EOF on free");
+    resL = executeSubRules(program, position = newPos, scope, internalState);
+    if (!resL.length())
+        throw szl::SZLException("Free expects two parameters");
+    if (internalState.size() < 1)
+        throw szl::SZLException("Alloc expects two parameters");
+    if (internalState.back() != "uint")
+        throw szl::SZLException("Alloc expects two uint parameters");
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF on free");
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error on free");
+    if (program[position].content != ",")
+        throw szl::SZLException("Syntax error on free");
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF on free");
+    res = executeSubRules(program, position, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("Free expects two parameters");
+    if (internalState.size() < 2)
+        throw szl::SZLException("Alloc expects two parameters");
+    if (internalState.back() != "uint")
+        throw szl::SZLException("Alloc expects two uint parameters");
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error on alloc");
+    if (program[position++].content != ")")
+        throw szl::SZLException("Syntax error on alloc");
+    internalState.pop_back();
+    internalState.pop_back();
+    return resL + "PUSH HL\n" + res + "POP DE\nEX DE,HL\nCALL @stdszllib_free\n";
+}
+
+szl::GrammarFree::GrammarFree(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarFree::initialize()
+{
+    addSubRule("questioned at");
+    addSubRule("two literals addition");
+    addSubRule("brackets");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("and");
+    addSubRule("or");
+    addSubRule("xor");
+    addSubRule("modulo");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("identifier");
+    addSubRule("literal");
+    addSubRule("in");
+    addSubRule("function call");
 }

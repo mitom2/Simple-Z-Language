@@ -55,6 +55,8 @@ void szl::compile(const std::string &in, const std::string &out)
     grammar.initialize();
     // TODO: set program name using preprocessor
     szl::programData["name"] = "program";
+    // TODO: determine heap address
+    szl::programData["heap address"] = "$FF00";
     std::string res;
     {
         std::list<szl::Scope> scopes;
