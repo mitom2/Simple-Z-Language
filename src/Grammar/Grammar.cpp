@@ -406,9 +406,9 @@ std::string szl::GrammarSingleVariableDeclaration::execute(std::vector<szl::Toke
         return "";
 
     auto type = program[position].content;
-    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "float" && type != "char" && type != "string")
-        return "";
     if (program[position + 2].content != "=")
+        return "";
+    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "float" && type != "char" && type != "string" && szl::objectTypes.count(type) == 0)
         return "";
 
     auto newPos = position + 3;
@@ -449,6 +449,20 @@ std::string szl::GrammarSingleVariableDeclaration::execute(std::vector<szl::Toke
     if (type == "string")
     {
         scope.back().renameHead(name);
+        return;
+    }
+
+    // OBJECT - HL contains address of the object
+    if (szl::objectTypes.count(type) > 0)
+    {
+        auto object = szl::objectTypes[type];
+        if (object.getContents().count("operator=") > 0)
+            return subRes + "CALL " + object.getContents()["operator="];
+        throw szl::SZLException("Object of type '" + type + "' does not have operator= defined");
+    }
+    else
+    {
+        throw szl::SZLException("Unknown type '" + type + "' in variable declaration");
     }
 
     return subRes;
