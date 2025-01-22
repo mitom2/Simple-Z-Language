@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <string>
 #include "Function/Function.hpp"
+#include "Object/Object.hpp"
 
 namespace szl
 {
