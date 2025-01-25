@@ -188,5 +188,5 @@ szl::Token szl::RuleLiteral::generateToken(const szl::Code &content, std::size_t
             }
         }
     }
-    throw szl::SZLException("Lexical analysis token generation error");
+    throw szl::SZLException("Lexical analysis token generation error", content[position].file, content[position].line);
 }

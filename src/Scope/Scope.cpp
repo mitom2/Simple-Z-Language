@@ -97,7 +97,7 @@ void szl::Scope::renameHead(const std::string &newName)
             return;
         }
     }
-    throw szl::SZLException("Error while assigning variable name");
+    throw szl::SZLException("Error while assigning variable name '" + newName + "'");
 }
 
 void szl::Scope::popHead()

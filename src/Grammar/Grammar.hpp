@@ -19,7 +19,7 @@ namespace szl
     {
         static std::string toBin(uint32_t in);
 
-        static std::string toBinFloat(double in);
+        static std::string toBinFloat(double in, const std::string &file, const std::string &line);
 
         std::unordered_map<std::string, Grammar *> grammars;
 
@@ -32,9 +32,9 @@ namespace szl
 
         static std::string fromDec(const std::string &in);
 
-        static std::string fromChar(const std::string &in);
+        static std::string fromChar(const std::string &in, const std::string &file, const std::string &line);
 
-        static std::string fromDecFloat(const std::string &in);
+        static std::string fromDecFloat(const std::string &in, const std::string &file, const std::string &line);
 
         static bool isValidNumber(const std::string &in);
 
@@ -48,7 +48,7 @@ namespace szl
 
         static std::string binaryAdd(std::string in1, std::string in2);
 
-        Grammar *getGrammar(const std::string &name);
+        Grammar *getGrammar(const std::string &name, const std::string &file, const std::string &line);
 
         std::string compileScope(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const;
 
@@ -65,7 +65,7 @@ namespace szl
          */
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const;
 
-        void addSubRule(const std::string id);
+        void addSubRule(const std::string id, const std::string &file, const std::string &line);
 
         Grammar(Grammar *root = nullptr);
 
