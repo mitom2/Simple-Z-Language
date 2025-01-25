@@ -1,23 +1,48 @@
 #include "Code.hpp"
 
-void szl::Code::insert(CodeLine line, std::size_t position)
+void szl::Code::insert(std::string codeText, std::size_t position, std::string file, std::size_t line)
 {
-    code.insert(code.begin() + position, line);
+    for (std::size_t i = 0; i < codeText.size(); i++)
+    {
+        szl::CodeCharacter newCharacter;
+        newCharacter.contents = codeText[i];
+        newCharacter.file = file;
+        newCharacter.line = line;
+        code.insert(code.begin() + position + i, newCharacter);
+    }
 }
 
-void szl::Code::insert(CodeLine line)
-{
-    insert(line, ++currentPosition);
-}
-
-void szl::Code::insert(std::string codeText)
-{
-    szl::CodeLine codeLine = code[currentPosition];
-    codeLine.contents = codeText;
-    insert(codeLine, ++currentPosition);
-}
-
-szl::CodeLine &szl::Code::operator[](std::size_t position)
+const szl::CodeCharacter &szl::Code::operator[](std::size_t position) const
 {
     return code[position];
+}
+
+std::size_t szl::Code::size() const
+{
+    return code.size();
+}
+
+std::size_t szl::Code::length() const
+{
+    return code.size();
+}
+
+std::string szl::Code::substr(const std::size_t position, const std::size_t length) const
+{
+    std::string res;
+    for (std::size_t i = 0; i < length && i + position < code.size(); i++)
+    {
+        res += code[position + i].contents;
+    }
+    return res;
+}
+
+bool szl::CodeCharacter::operator==(const char &ch) const
+{
+    return contents == ch;
+}
+
+szl::CodeCharacter::operator char() const
+{
+    return contents;
 }

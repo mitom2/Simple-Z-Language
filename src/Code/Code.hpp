@@ -4,41 +4,31 @@
 
 namespace szl
 {
-    struct CodeLine
+    class CodeCharacter
     {
-        std::string contents;
-        std::size_t position;
+    public:
+        char contents;
         std::string file;
+        std::string line;
+        bool operator==(const char &ch) const;
+        operator char() const;
     };
 
     class Code
     {
-        std::vector<CodeLine> code;
-        std::size_t currentPosition;
+        std::vector<CodeCharacter> code;
 
     public:
-        Code(std::vector<CodeLine> newCode = std::vector<CodeLine>()) : code(newCode), currentPosition(0) {}
+        Code(std::vector<CodeCharacter> newCode = std::vector<CodeCharacter>()) : code(newCode) {}
 
-        void insert(CodeLine line, std::size_t position);
+        void insert(std::string codeText, std::size_t position, std::string file, std::size_t line);
 
-        /**
-         * @brief Inserts a code line after the current line and set currentPosition to it.
-         *
-         * @param line line to be inserted
-         */
-        void insert(CodeLine line);
+        const CodeCharacter &operator[](std::size_t position) const;
 
-        /**
-         * @brief Inserts a code snippet after the current line and set currentPosition to it. File and position are copied from last currentElement.
-         *
-         * @param codeText code snippet to be inserted
-         */
-        void insert(std::string codeText);
+        std::size_t size() const;
 
-        CodeLine &operator[](std::size_t position);
+        std::size_t length() const;
 
-        std::size_t getCurrentPosition() const { return currentPosition; }
-        void setCurrentPosition(const std::size_t &currentPosition_) { currentPosition = currentPosition_; }
-        void operator++() { currentPosition++; }
+        std::string substr(const std::size_t position, const std::size_t length) const;
     };
 }
