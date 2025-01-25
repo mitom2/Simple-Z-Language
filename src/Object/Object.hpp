@@ -14,8 +14,10 @@ namespace szl
 
         void setName(const std::string &name_) { name = name_; }
 
-        std::unordered_map<std::string, std::string> &getContents() const { return contents; }
+        std::unordered_map<std::string, std::string> &getContents() { return contents; }
 
-        void setAttributes(const std::unordered_map<std::string, std::string> &contents_) { contents = contents_; }
+        void setContents(const std::unordered_map<std::string, std::string> &contents_) { contents = contents_; }
+
+        int getSize() const;
     };
 } // namespace szl
