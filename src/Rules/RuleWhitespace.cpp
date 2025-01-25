@@ -1,6 +1,6 @@
 #include "RuleWhitespace.hpp"
 
-bool szl::RuleWhitespace::check(const std::string &content, std::size_t position) const
+bool szl::RuleWhitespace::check(const szl::Code &content, std::size_t position) const
 {
     for (std::size_t i = 0; i < 6; i++)
     {
@@ -12,7 +12,7 @@ bool szl::RuleWhitespace::check(const std::string &content, std::size_t position
     return false;
 }
 
-szl::Token szl::RuleWhitespace::generateToken(const std::string &content, std::size_t position) const
+szl::Token szl::RuleWhitespace::generateToken(const szl::Code &content, std::size_t position) const
 {
     szl::Token res;
     res.category = TokenCategory::Whitespace;
@@ -31,5 +31,7 @@ szl::Token szl::RuleWhitespace::generateToken(const std::string &content, std::s
         }
     }
     res.content = content.substr(position, content.size() - position);
+    res.file = content[position].file;
+    res.line = content[position].line;
     return res;
 }

@@ -1,6 +1,6 @@
 #include "RuleKeyword.hpp"
 
-bool szl::RuleKeyword::check(const std::string &content, std::size_t position) const
+bool szl::RuleKeyword::check(const szl::Code &content, std::size_t position) const
 {
     if (content[position] == '/')
     {
@@ -28,7 +28,7 @@ bool szl::RuleKeyword::check(const std::string &content, std::size_t position) c
     return false;
 }
 
-szl::Token szl::RuleKeyword::generateToken(const std::string &content, std::size_t position) const
+szl::Token szl::RuleKeyword::generateToken(const szl::Code &content, std::size_t position) const
 {
     if (content[position] == '/')
     {
@@ -63,5 +63,7 @@ szl::Token szl::RuleKeyword::generateToken(const std::string &content, std::size
     if (!maxMatch.length())
         throw szl::SZLException("Lexical analysis token generation error");
     res.content = maxMatch;
+    res.file = content[position].file;
+    res.line = content[position].line;
     return res;
 }

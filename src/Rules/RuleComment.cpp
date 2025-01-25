@@ -1,6 +1,6 @@
 #include "RuleComment.hpp"
 
-bool szl::RuleComment::check(const std::string &content, std::size_t position) const
+bool szl::RuleComment::check(const szl::Code &content, std::size_t position) const
 {
     if (content.size() <= position + 1)
         return false;
@@ -9,7 +9,7 @@ bool szl::RuleComment::check(const std::string &content, std::size_t position) c
     return true;
 }
 
-szl::Token szl::RuleComment::generateToken(const std::string &content, std::size_t position) const
+szl::Token szl::RuleComment::generateToken(const szl::Code &content, std::size_t position) const
 {
     szl::Token res;
     res.category = szl::TokenCategory::Comment;
@@ -25,5 +25,7 @@ szl::Token szl::RuleComment::generateToken(const std::string &content, std::size
         }
     }
     res.content = content.substr(position, content.size() - position);
+    res.file = content[position].file;
+    res.line = content[position].line;
     return res;
 }

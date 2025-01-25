@@ -1,6 +1,6 @@
 #include "RuleIdentifier.hpp"
 
-bool szl::RuleIdentifier::check(const std::string &content, std::size_t position) const
+bool szl::RuleIdentifier::check(const szl::Code &content, std::size_t position) const
 {
     szl::RuleLiteral literalChk;
     if (literalChk.check(content, position))
@@ -13,10 +13,12 @@ bool szl::RuleIdentifier::check(const std::string &content, std::size_t position
     return false;
 }
 
-szl::Token szl::RuleIdentifier::generateToken(const std::string &content, std::size_t position) const
+szl::Token szl::RuleIdentifier::generateToken(const szl::Code &content, std::size_t position) const
 {
     szl::Token res;
     res.category = szl::TokenCategory::Identifier;
+    res.file = content[position].file;
+    res.line = content[position].line;
     for (std::size_t i = 0; i + position < content.size(); i++)
     {
         if (!szl::Rule::isWordCharacter(content[position + i]))

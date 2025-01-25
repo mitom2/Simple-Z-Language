@@ -19,9 +19,9 @@
 
 namespace szl
 {
-    std::string loadFile(const std::string &path);
+    szl::Code loadFile(const std::string &path);
 
-    std::vector<szl::Token> tokenize(const std::string &code);
+    std::vector<szl::Token> tokenize(const szl::Code &code);
 
     void compile(const std::string &in, const std::string &out);
 }

@@ -1,20 +1,21 @@
 #include "Compiler.hpp"
 
-std::string szl::loadFile(const std::string &path)
+szl::Code szl::loadFile(const std::string &path)
 {
     std::ifstream file(path);
     if (!file.good())
         throw szl::SZLException("Input file not found");
-    std::string input, content;
-    while (file >> input)
+    std::string input;
+    szl::Code content;
+    for (std::size_t line = 0; std::getline(file, input); line++)
     {
-        content += input + " ";
+        content.insert(input, content.size(), path, line);
     }
     file.close();
     return content;
 }
 
-std::vector<szl::Token> szl::tokenize(const std::string &code)
+std::vector<szl::Token> szl::tokenize(const szl::Code &code)
 {
     std::list<szl::Rule *> allRules = {new szl::RuleWhitespace, new szl::RuleComment, new szl::RuleLiteral, new szl::RuleBracket, new szl::RulePunctuation, new szl::RuleKeyword, new szl::RuleIdentifier};
     std::list<szl::Rule *> rules;

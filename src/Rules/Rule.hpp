@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include "Code/Code.hpp"
 
 namespace szl
 {
@@ -18,6 +19,8 @@ namespace szl
     {
         TokenCategory category;
         std::string content;
+        std::string file;
+        std::string line;
     };
 
     class Rule
@@ -31,7 +34,7 @@ namespace szl
         static bool isSeparatorCharacter(const char c);
 
     public:
-        virtual bool check(const std::string &content, std::size_t position) const = 0;
-        virtual szl::Token generateToken(const std::string &content, std::size_t position) const = 0;
+        virtual bool check(const szl::Code &content, std::size_t position) const = 0;
+        virtual szl::Token generateToken(const szl::Code &content, std::size_t position) const = 0;
     };
 }

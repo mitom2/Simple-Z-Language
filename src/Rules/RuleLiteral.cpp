@@ -1,6 +1,6 @@
 #include "RuleLiteral.hpp"
 
-bool szl::RuleLiteral::check(const std::string &content, std::size_t position) const
+bool szl::RuleLiteral::check(const szl::Code &content, std::size_t position) const
 {
     // Case: character/string
     char sign = content[position];
@@ -81,10 +81,12 @@ bool szl::RuleLiteral::check(const std::string &content, std::size_t position) c
     return false;
 }
 
-szl::Token szl::RuleLiteral::generateToken(const std::string &content, std::size_t position) const
+szl::Token szl::RuleLiteral::generateToken(const szl::Code &content, std::size_t position) const
 {
     szl::Token res;
     res.category = szl::TokenCategory::Literal;
+    res.file = content[position].file;
+    res.line = content[position].line;
 
     // Case: character/string
     char sign = content[position];
