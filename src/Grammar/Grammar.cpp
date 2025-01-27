@@ -2479,7 +2479,7 @@ std::string szl::GrammarFunctionCall::execute(std::vector<szl::Token> &program, 
         else if (type == "long" || type == "ulong" || type == "float")
             subRes += "PUSH HL\nPUSH DE\n";
         else if (!szl::objectTypes.count(type))
-            throw szl::SZLException("Internal compiler error: function table defines argument type as '" + type + "', but this type is not known", program[position].file, program[position].line);
+            throw szl::SZLException("Argument type in function call defined as '" + type + "', but this type is not known", program[position].file, program[position].line);
         if (program[position].category != szl::TokenCategory::Punctuation && program[position].category != szl::TokenCategory::Bracket)
             throw szl::SZLException("Syntax error while calling function", program[position].file, program[position].line);
         if (program[position].content != "," && program[position].content != ")")
