@@ -2487,7 +2487,7 @@ std::string szl::GrammarFunctionCall::execute(std::vector<szl::Token> &program, 
         position++;
         res += subRes;
     }
-    return res + "JP " + function.getLabel();
+    return res + "CALL " + function.getLabel();
 }
 
 szl::GrammarFunctionCall::GrammarFunctionCall(Grammar *root) : szl::Grammar(root) {}
