@@ -425,14 +425,12 @@ std::string szl::GrammarSingleVariableDeclaration::execute(std::vector<szl::Toke
         return subRes + "PUSH DE\nPUSH HL\n";
     }
 
-    // OBJECT - HL contains address of the object
+    // OBJECT - already on the stack
     if (szl::objectTypes.count(type) > 0)
     {
         auto object = szl::objectTypes[type];
         scope.back().insertVariable(name, object.getSize(), type);
-        if (object.getContents().count("operator="))
-            return "LD HL,#" + std::to_string(object.getSize()) + "\nOR A\nSBC HL,SP\nLD SP,HL\n" + subRes + "LD HL,#" + std::to_string(scope.back()[name].getPosition()) + "\nPUSH HL\nCALL " + object.getContents()["operator="];
-        throw szl::SZLException("Object of type '" + type + "' does not have operator= defined", program[position].file, program[position].line);
+        return subRes;
     }
     else
     {
@@ -717,7 +715,10 @@ std::string szl::GrammarIdentifier::execute(std::vector<szl::Token> &program, st
     {
         return "LD HL,(#" + std::to_string(scope.back()[name].getPosition()) + ")\nLD DE,(#" + std::to_string(scope.back()[name].getPosition() + 2) + ")\n";
     }
-    return "LD HL,#" + std::to_string(scope.back()[name].getPosition()) + "\n";
+    auto variable = scope.back()[name];
+    if (!szl::objectTypes.count(variable.getType()))
+        throw szl::SZLException("Variable with identifier '" + name + "' is of unknown type '" + variable.getType() + "'", program[position].file, program[position].line);
+    return "LD BC,#" + std::to_string(szl::objectTypes[variable.getType()].getSize()) + "\nLD HL,%0\nADD HL,SP\nDEC HL\nEX DE,HL\nLD HL,#" + std::to_string(variable.getPosition()) + "\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
 }
 
 szl::GrammarIdentifier::GrammarIdentifier(Grammar *root) : szl::Grammar(root) {}
@@ -882,7 +883,7 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator+"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator+"];
+            return resL + res + "\nCALL " + object.getContents()["operator+"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator+ defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Addition type unrecognized", program[position].file, program[position].line);
@@ -946,7 +947,7 @@ std::string szl::GrammarSubtraction::execute(std::vector<szl::Token> &program, s
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator-"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator-"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator-"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator- defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Subtraction type unrecognized", program[position].file, program[position].line);
@@ -1022,7 +1023,7 @@ std::string szl::GrammarMultiplication::execute(std::vector<szl::Token> &program
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator*"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator*"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator*"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator* defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Multiplication type unrecognized", program[position].file, program[position].line);
@@ -1098,7 +1099,7 @@ std::string szl::GrammarDivision::execute(std::vector<szl::Token> &program, std:
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator/"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator/"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator/"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator/ defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Division type unrecognized", program[position].file, program[position].line);
@@ -1162,7 +1163,7 @@ std::string szl::GrammarAnd::execute(std::vector<szl::Token> &program, std::size
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator&"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator&"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator&"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator& defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("AND operation type unrecognized", program[position].file, program[position].line);
@@ -1226,7 +1227,7 @@ std::string szl::GrammarOr::execute(std::vector<szl::Token> &program, std::size_
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator|"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator|"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator|"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator| defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("OR operation type unrecognized", program[position].file, program[position].line);
@@ -1290,7 +1291,7 @@ std::string szl::GrammarXor::execute(std::vector<szl::Token> &program, std::size
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator^"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator^"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator^"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator^ defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("XOR operation type unrecognized", program[position].file, program[position].line);
@@ -1366,7 +1367,7 @@ std::string szl::GrammarModulo::execute(std::vector<szl::Token> &program, std::s
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator%"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator%"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator%"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator% defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Modulo type unrecognized", program[position].file, program[position].line);
@@ -1546,7 +1547,7 @@ std::string szl::GrammarShiftLeft::execute(std::vector<szl::Token> &program, std
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator<<"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator<<"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator<<"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator<< defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Left shift type unrecognized", program[position].file, program[position].line);
@@ -1610,7 +1611,7 @@ std::string szl::GrammarShiftRight::execute(std::vector<szl::Token> &program, st
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator>>"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator>>"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator>>"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator>> defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Right shift type unrecognized", program[position].file, program[position].line);
@@ -1677,7 +1678,7 @@ std::string szl::GrammarNotEqual::execute(std::vector<szl::Token> &program, std:
     {
         auto object = szl::objectTypes[internalState.back()];
         if (object.getContents().count("operator!="))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator!="];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator!="];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator!= defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Not equal comparison type unrecognized", program[position].file, program[position].line);
@@ -1745,7 +1746,7 @@ std::string szl::GrammarEqual::execute(std::vector<szl::Token> &program, std::si
         auto object = szl::objectTypes[internalState.back()];
         internalState.back() = "bool";
         if (object.getContents().count("operator=="))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator=="];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator=="];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator== defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Equal comparison type unrecognized", program[position].file, program[position].line);
@@ -1827,7 +1828,7 @@ std::string szl::GrammarGreater::execute(std::vector<szl::Token> &program, std::
         auto object = szl::objectTypes[internalState.back()];
         internalState.back() = "bool";
         if (object.getContents().count("operator>"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator>"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator>"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator> defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Greater comparison type unrecognized", program[position].file, program[position].line);
@@ -1909,7 +1910,7 @@ std::string szl::GrammarLess::execute(std::vector<szl::Token> &program, std::siz
         auto object = szl::objectTypes[internalState.back()];
         internalState.back() = "bool";
         if (object.getContents().count("operator<"))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator<"];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator<"];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator< defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Less comparison type unrecognized", program[position].file, program[position].line);
@@ -1991,7 +1992,7 @@ std::string szl::GrammarGreaterOrEqual::execute(std::vector<szl::Token> &program
         auto object = szl::objectTypes[internalState.back()];
         internalState.back() = "bool";
         if (object.getContents().count("operator>="))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator>="];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator>="];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator>= defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Greater or equal comparison type unrecognized", program[position].file, program[position].line);
@@ -2073,7 +2074,7 @@ std::string szl::GrammarLessOrEqual::execute(std::vector<szl::Token> &program, s
         auto object = szl::objectTypes[internalState.back()];
         internalState.back() = "bool";
         if (object.getContents().count("operator<="))
-            return resL + "PUSH HL\n" + res + "PUSH HL\nCALL " + object.getContents()["operator<="];
+            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator<="];
         throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator<= defined", program[position].file, program[position].line);
     }
     throw szl::SZLException("Less or equal comparison type unrecognized", program[position].file, program[position].line);
@@ -2477,9 +2478,7 @@ std::string szl::GrammarFunctionCall::execute(std::vector<szl::Token> &program, 
             subRes += "PUSH HL\n";
         else if (type == "long" || type == "ulong" || type == "float")
             subRes += "PUSH HL\nPUSH DE\n";
-        else if (szl::objectTypes.count(type))
-            subRes += "PUSH HL\n";
-        else
+        else if (!szl::objectTypes.count(type))
             throw szl::SZLException("Internal compiler error: function table defines argument type as '" + type + "', but this type is not known", program[position].file, program[position].line);
         if (program[position].category != szl::TokenCategory::Punctuation && program[position].category != szl::TokenCategory::Bracket)
             throw szl::SZLException("Syntax error while calling function", program[position].file, program[position].line);
@@ -2640,7 +2639,7 @@ std::string szl::GrammarAt::execute(std::vector<szl::Token> &program, std::size_
     // OBJECT
     if (szl::objectTypes.count(internalState.back()))
     {
-        return res;
+        return res + "EX DE,HL\nLD BC,#" + std::to_string(szl::objectTypes[internalState.back()].getSize()) + "\nLD HL,%0\nADD HL,SP\nDEC HL\nEX DE,HL\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
     }
     throw szl::SZLException("@ type not recognized", program[position].file, program[position].line);
 }
@@ -2685,7 +2684,7 @@ std::string szl::GrammarArrow::execute(std::vector<szl::Token> &program, std::si
     // OBJECT
     if (szl::objectTypes.count(internalState.back()))
     {
-        return resL + res + "CALL " + szl::objectTypes[internalState.back()].getContents()["operator="];
+        return resL + res + "PUSH HL\nCALL " + szl::objectTypes[internalState.back()].getContents()["operator="];
     }
     throw szl::SZLException("-> type not recognized", program[position].file, program[position].line);
 }
