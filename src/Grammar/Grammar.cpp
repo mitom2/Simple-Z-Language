@@ -373,6 +373,7 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("get member field", new szl::GrammarGetMemberField(this));
     grammars.emplace("set member field", new szl::GrammarSetMemberField(this));
     grammars.emplace("object declaration", new szl::GrammarObjectDeclaration(this));
+    grammars.emplace("object creation", new szl::GrammarObjectCreation(this));
 }
 
 szl::Grammar::~Grammar()
@@ -2899,5 +2900,39 @@ std::string szl::GrammarObjectDeclaration::execute(std::vector<szl::Token> &prog
 szl::GrammarObjectDeclaration::GrammarObjectDeclaration(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarObjectDeclaration::initialize()
+{
+}
+
+std::string szl::GrammarObjectCreation::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Identifier)
+        return "";
+    auto type = program[position].content;
+    if (!szl::objectTypes.count(type))
+        return "";
+    auto newPos = position + 1;
+    if (newPos >= program.size())
+        throw szl::SZLException("Unexpected EOF while creating object of type '" + type + "'", program[position].file, program[position].line);
+    if (program[newPos].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    auto name = program[newPos++].content;
+    if (scope.back().exists(name))
+        throw szl::SZLException("Redeclaration of variable '" + name + "'", program[position].file, program[position].line);
+    if (functions.count(name))
+        throw szl::SZLException("Redeclaration of function '" + name + "'", program[position].file, program[position].line);
+    if (position = newPos + 1 >= program.size())
+        throw szl::SZLException("Unexpected EOF while creating object", program[position - 1].file, program[position - 1].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    if (program[position++].content != ";")
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    auto object = szl::objectTypes[type];
+    scope.back().insertVariable(name, object.getSize(), type);
+    return "LD DE,#" + std::to_string(object.getSize()) + "LD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
+}
+
+szl::GrammarObjectCreation::GrammarObjectCreation(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarObjectCreation::initialize()
 {
 }
