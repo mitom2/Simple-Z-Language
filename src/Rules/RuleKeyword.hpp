@@ -23,6 +23,7 @@ namespace szl
             "object",
             "void",
             "in", "out",
+            "sizeof",
             "lock();", "unlock();",
             "return"};
 
