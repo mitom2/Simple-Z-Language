@@ -369,6 +369,7 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("questioned at", new szl::GrammarQuestionedAt(this));
     grammars.emplace("alloc", new szl::GrammarAlloc(this));
     grammars.emplace("free", new szl::GrammarFree(this));
+    grammars.emplace("conversion", new szl::GrammarConversion(this));
 }
 
 szl::Grammar::~Grammar()
@@ -2641,5 +2642,94 @@ std::string szl::GrammarFree::execute(std::vector<szl::Token> &program, std::siz
 szl::GrammarFree::GrammarFree(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarFree::initialize()
+{
+}
+
+std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    auto newPos = position;
+    std::string res;
+    if (program[newPos].category != szl::TokenCategory::Keyword)
+        return "";
+    auto type = program[newPos++].content;
+    if (type != "int" && type != "uint" && type != "char" && type != "long" && type != "ulong" && type != "float")
+        return "";
+    if (program.size() <= newPos)
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Bracket)
+        return "";
+    if (program[newPos++].content != "(")
+        return "";
+    if (program.size() <= newPos)
+        throw szl::SZLException("Unexpected EOF when converting to " + type, program[position].file, program[position].line);
+    res = executeSubRules(program, position = newPos, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("Conversion to " + type + " expects one parameter", program[position].file, program[position].line);
+    if (internalState.size() < 1)
+        throw szl::SZLException("Conversion to " + type + " expects one parameter", program[position].file, program[position].line);
+    if (internalState.back() != "int" && internalState.back() != "uint" && internalState.back() != "char" && internalState.back() != "long" && internalState.back() != "ulong" && internalState.back() != "float")
+        throw szl::SZLException("Conversion to " + type + " expects one parameter of type int, uint, char, long, ulong or float", program[position].file, program[position].line);
+    if (program.size() <= position)
+        throw szl::SZLException("Unexpected EOF when converting " + internalState.back() + " to " + type, program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error when converting " + internalState.back() + " to " + type, program[position].file, program[position].line);
+    if (program[position++].content != ")")
+        throw szl::SZLException("Syntax error when converting " + internalState.back() + " to " + type, program[position].file, program[position].line);
+    internalState.back() = type;
+    if (internalState.back() == type)
+        return res;
+    if (internalState.back() == "float")
+    {
+        if (type == "long")
+            return res + "CALL @stdszllib_conversion_float_to_long\n";
+        if (type == "ulong")
+            return res + "CALL @stdszllib_conversion_float_to_ulong\n";
+        if (type == "int")
+            return res + "CALL @stdszllib_conversion_float_to_int\n";
+        if (type == "uint" || type == "char")
+            return res + "CALL @stdszllib_conversion_float_to_uint\n";
+    }
+    else if (internalState.back() == "long")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_long_to_float\n";
+        if (type == "ulong")
+            return res;
+        if (type == "int" || type == "uint" || type == "char")
+            return res + "EX DE,HL\n";
+    }
+    else if (internalState.back() == "ulong")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_ulong_to_float\n";
+        if (type == "long")
+            return res;
+        if (type == "int" || type == "uint" || type == "char")
+            return res + "EX DE,HL\n";
+    }
+    else if (internalState.back() == "int")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_int_to_float\n";
+        if (type == "long" || type == "ulong")
+            return res + "EX DE,HL\nLD HL,%0\n";
+        if (type == "uint" || type == "char")
+            return res;
+    }
+    else if (internalState.back() == "uint" || internalState.back() == "char")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_uint_to_float\n";
+        if (type == "long" || type == "ulong")
+            return res + "EX DE,HL\nLD HL,%0\n";
+        if (type == "int")
+            return res;
+    }
+    throw szl::SZLException("No function " + type + "(" + internalState.back() + ") found", program[position].file, program[position].line);
+}
+
+szl::GrammarConversion::GrammarConversion(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarConversion::initialize()
 {
 }
