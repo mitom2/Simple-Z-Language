@@ -372,6 +372,7 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("conversion", new szl::GrammarConversion(this));
     grammars.emplace("get member field", new szl::GrammarGetMemberField(this));
     grammars.emplace("set member field", new szl::GrammarSetMemberField(this));
+    grammars.emplace("object declaration", new szl::GrammarObjectDeclaration(this));
 }
 
 szl::Grammar::~Grammar()
@@ -2833,5 +2834,70 @@ std::string szl::GrammarSetMemberField::execute(std::vector<szl::Token> &program
 szl::GrammarSetMemberField::GrammarSetMemberField(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarSetMemberField::initialize()
+{
+}
+
+std::string szl::GrammarObjectDeclaration::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[position].content != "object")
+        return "";
+    if (scope.size() > 1)
+        throw szl::SZLException("Objects can only be declared in the global scope", program[position].file, program[position].line);
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while declaring object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while declaring object", program[position].file, program[position].line);
+    auto name = program[position].content;
+    if (szl::objectTypes.count(name))
+        throw szl::SZLException("Object named '" + name + "' already exists", program[position].file, program[position].line);
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while declaring object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error while declaring object", program[position].file, program[position].line);
+    if (program[position++].content != "{")
+        throw szl::SZLException("Syntax error while declaring object", program[position].file, program[position].line);
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF while declaring object", program[position].file, program[position].line);
+    szl::objectTypes.emplace(name, szl::Object());
+    szl::objectTypes[name].setName(name);
+    for (int offset = 0; position + 3 < program.size();)
+    {
+        if (program[position].category == szl::TokenCategory::Bracket)
+        {
+            if (program[position].content == "}")
+                break;
+        }
+        if (program[position].category != szl::TokenCategory::Keyword && program[position].category != szl::TokenCategory::Identifier)
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        auto type = program[position++].content;
+        if (program[position].category != szl::TokenCategory::Identifier)
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        auto memberName = program[position++].content;
+        if (program[position].category != szl::TokenCategory::Punctuation)
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        if (program[position++].content != ";")
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        if (!szl::objectTypes.count(type))
+        {
+            if (type != "int" && type != "uint" && type != "char" && type != "bool" && type != "long" && type != "ulong" && type != "float")
+                throw szl::SZLException("Member field type '" + type + "' not recognized", program[position].file, program[position].line);
+            int size = 0;
+            if (type == "int" || type == "uint" || type == "char" || type == "bool")
+                size = 2;
+            else if (type == "long" || type == "ulong" || type == "float")
+                size = 4;
+            szl::objectTypes[name].getContents().emplace(memberName, type);
+            szl::objectTypes[name].getVariables().push_back({memberName, szl::Variable(offset, size, type)});
+            offset += size;
+        }
+    }
+    return "\n";
+}
+
+szl::GrammarObjectDeclaration::GrammarObjectDeclaration(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarObjectDeclaration::initialize()
 {
 }
