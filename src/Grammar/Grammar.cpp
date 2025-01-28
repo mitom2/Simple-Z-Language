@@ -370,6 +370,8 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("alloc", new szl::GrammarAlloc(this));
     grammars.emplace("free", new szl::GrammarFree(this));
     grammars.emplace("conversion", new szl::GrammarConversion(this));
+    grammars.emplace("get member field", new szl::GrammarGetMemberField(this));
+    grammars.emplace("set member field", new szl::GrammarSetMemberField(this));
 }
 
 szl::Grammar::~Grammar()
@@ -2731,5 +2733,105 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
 szl::GrammarConversion::GrammarConversion(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarConversion::initialize()
+{
+}
+
+std::string szl::GrammarGetMemberField::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Identifier)
+        return "";
+    auto name = program[position].content;
+    if (!scope.back().exists(name))
+        return "";
+    auto variable = scope.back()[name];
+    if (!szl::objectTypes.count(variable.getType()))
+        return "";
+    auto object = szl::objectTypes[variable.getType()];
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (program[position++].content != ".")
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    auto memberName = program[position].content;
+    if (!object.getContents().count(memberName))
+        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
+    auto member = object.getContents()[memberName];
+    internalState.push_back(member);
+    if (!szl::objectTypes.count(member))
+    {
+        if (member == "int" || member == "uint" || member == "char" || member == "bool")
+            return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD D,(HL)\nDEC HL\nLD E,(HL)\nEX DE,HL\n";
+        if (member == "long" || member == "ulong" || member == "float")
+            return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD B,(HL)\nDEC HL\nLD C,(HL)\nDEC HL\nLD D,(HL)\nDEC HL\nLD E,(HL)\nLD H,B\nLD L,C\n";
+        throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
+    }
+    return "LD HL,%0\nADD HL,SP\nDEC HL\n EX DE,HL\nLD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD BC,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
+}
+
+szl::GrammarGetMemberField::GrammarGetMemberField(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarGetMemberField::initialize()
+{
+}
+
+std::string szl::GrammarSetMemberField::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Identifier)
+        return "";
+    auto name = program[position].content;
+    if (!scope.back().exists(name))
+        return "";
+    auto variable = scope.back()[name];
+    if (!szl::objectTypes.count(variable.getType()))
+        return "";
+    if (position + 4 >= program.size())
+        return "";
+    if (program[position + 3].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[position + 3].content != "=")
+        return "";
+    auto object = szl::objectTypes[variable.getType()];
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (program[position++].content != ".")
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    auto memberName = program[position].content;
+    if (!object.getContents().count(memberName))
+        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
+    auto member = object.getContents()[memberName];
+    auto pos = std::to_string(object.getVariablePosition(variable.getPosition(), memberName));
+    auto res = executeSubRules(program, position = position + 2, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("No valid value to assign to member '" + memberName + "'", program[position].file, program[position].line);
+    if (!internalState.size())
+        throw szl::SZLException("No valid value to assign to member '" + memberName + "'", program[position].file, program[position].line);
+    if (internalState.back() != member)
+        throw szl::SZLException("Attempting to write value of type '" + internalState.back() + "' to member '" + memberName + "', which is of type '" + member + "'", program[position].file, program[position].line);
+    internalState.pop_back();
+    if (!szl::objectTypes.count(member))
+    {
+        if (member == "int" || member == "uint" || member == "char" || member == "bool")
+            return res + "EX DE,HL\nLD HL,#" + pos + "\nLD (HL),D\nDEC HL\nLD (HL),E\n";
+        if (member == "long" || member == "ulong" || member == "float")
+            return res + "LD B,H\nLD C,L\nLD HL,#" + pos + "\nLD (HL),B\nDEC HL\nLD (HL),C\nDEC HL\nLD (HL),D\nDEC HL\nLD (HL),E\n";
+        throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
+    }
+    return res + "LD DE,#" + pos + "\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLD B,H\nLD C,L\nADD HL,SP\nLDDR\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nADD HL,SP\nLD SP,HL\n";
+}
+
+szl::GrammarSetMemberField::GrammarSetMemberField(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarSetMemberField::initialize()
 {
 }

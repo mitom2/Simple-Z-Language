@@ -498,4 +498,24 @@ namespace szl
         virtual void initialize();
     };
 
+    class GrammarGetMemberField : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarGetMemberField(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarSetMemberField : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarSetMemberField(Grammar *root);
+
+        virtual void initialize();
+    };
+
 } // namespace szl
