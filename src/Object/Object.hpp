@@ -25,5 +25,9 @@ namespace szl
         int getSize() const;
 
         int getVariablePosition(const int objectPosition, const std::string &name) const;
+
+        std::vector<std::pair<std::string, szl::Variable>> &getVariables() { return variables; }
+
+        void setVariables(const std::vector<std::pair<std::string, szl::Variable>> &variables_) { variables = variables_; }
     };
 } // namespace szl
