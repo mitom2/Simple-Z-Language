@@ -48,7 +48,7 @@ namespace szl
 
         static std::string binaryAdd(std::string in1, std::string in2);
 
-        Grammar *getGrammar(const std::string &name, const std::string &file, const std::string &line);
+        Grammar *getGrammar(const std::string &name);
 
         std::string compileScope(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const;
 
@@ -65,7 +65,7 @@ namespace szl
          */
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const;
 
-        void addSubRule(const std::string id, const std::string &file, const std::string &line);
+        void addSubRule(const std::string id);
 
         Grammar(Grammar *root = nullptr);
 

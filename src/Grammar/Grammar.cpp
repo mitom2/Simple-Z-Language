@@ -262,17 +262,17 @@ std::string szl::Grammar::binaryAdd(std::string in1, std::string in2)
     return res;
 }
 
-szl::Grammar *szl::Grammar::getGrammar(const std::string &name, const std::string &file, const std::string &line)
+szl::Grammar *szl::Grammar::getGrammar(const std::string &name)
 {
     if (root != nullptr)
     {
-        return root->getGrammar(name, file, line);
+        return root->getGrammar(name);
     }
     if (grammars.count(name) > 0)
         return grammars.at(name);
     if (name == "all")
         return this;
-    throw szl::SZLException("Grammar rule '" + name + "' not found", file, line);
+    throw szl::SZLException("Grammar rule '" + name + "' not found");
 }
 
 std::string szl::Grammar::compileScope(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -309,6 +309,7 @@ void szl::Grammar::initialize()
     {
         it.second->initialize();
     }
+    addSubRule("semicolon", __FILE__, std::to_string(__LINE__));
 }
 
 std::string szl::Grammar::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -316,12 +317,12 @@ std::string szl::Grammar::execute(std::vector<szl::Token> &program, std::size_t 
     return executeSubRules(program, position, scope, internalState);
 }
 
-void szl::Grammar::addSubRule(const std::string id, const std::string &file, const std::string &line)
+void szl::Grammar::addSubRule(const std::string id)
 {
     if (root != nullptr)
-        subRules.push_back(root->getGrammar(id, file, line));
+        subRules.push_back(root->getGrammar(id));
     else
-        subRules.push_back(getGrammar(id, file, line));
+        subRules.push_back(getGrammar(id));
 }
 
 szl::Grammar::Grammar(Grammar *root) : root(root)
