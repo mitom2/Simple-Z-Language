@@ -375,6 +375,7 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("set member field", new szl::GrammarSetMemberField(this));
     grammars.emplace("object declaration", new szl::GrammarObjectDeclaration(this));
     grammars.emplace("object creation", new szl::GrammarObjectCreation(this));
+    grammars.emplace("sizeof", new szl::GrammarSizeOf(this));
 }
 
 szl::Grammar::~Grammar()
@@ -2935,5 +2936,45 @@ std::string szl::GrammarObjectCreation::execute(std::vector<szl::Token> &program
 szl::GrammarObjectCreation::GrammarObjectCreation(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarObjectCreation::initialize()
+{
+}
+
+std::string szl::GrammarSizeOf::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[position].content != "sizeof")
+        return "";
+    if (program.size() <= ++position)
+        throw szl::SZLException("Unexpected EOF while calling 'sizeof'", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error while calling 'sizeof'", program[position].file, program[position].line);
+    if (program[position++].content != "(")
+        throw szl::SZLException("Syntax error while calling 'sizeof'", program[position].file, program[position].line);
+    if (program.size() <= position)
+        throw szl::SZLException("Unexpected EOF while calling 'sizeof'", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier && program[position].category != szl::TokenCategory::Keyword)
+        throw szl::SZLException("Syntax error while calling 'sizeof'", program[position].file, program[position].line);
+    auto type = program[position++].content;
+    internalState.push_back("ulong");
+    if (!szl::objectTypes.count(type))
+    {
+        if (type == "int" || type == "uint" || type == "char" || type == "bool")
+            return "LD DE,#2\nLD HL,%0\n";
+        if (type == "long" || type == "ulong" || type == "float")
+            return "LD DE,#4\nLD HL,%0\n";
+        throw szl::SZLException("Type '" + type + "' not recognized", program[position].file, program[position].line);
+    }
+    auto size = fromDec(std::to_string(szl::objectTypes[type].getSize()));
+    if (size.length() > 32)
+        throw szl::SZLException("Size of object '" + type + "' is too large", program[position].file, program[position].line);
+    if (size.length() > 16)
+        return "LD DE,%" + size.substr(size.length() - 16, 16) + "\nLD HL,%" + size.substr(0, size.length() - 16) + "\n";
+    return "LD DE,%" + size + "\nLD HL,%0\n";
+}
+
+szl::GrammarSizeOf::GrammarSizeOf(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarSizeOf::initialize()
 {
 }

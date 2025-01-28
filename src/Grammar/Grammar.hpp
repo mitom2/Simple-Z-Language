@@ -538,4 +538,14 @@ namespace szl
         virtual void initialize();
     };
 
+    class GrammarSizeOf : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarSizeOf(Grammar *root);
+
+        virtual void initialize();
+    };
+
 } // namespace szl
