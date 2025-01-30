@@ -17,14 +17,13 @@ namespace szl
             "!=", "==", "<", ">", "<=", ">=",
             "if", "for", "while",
             "int", "uint", "long", "ulong",
-            "bool", "float", "char", "string",
+            "bool", "float", "char",
             "@", "->", "?",
             "alloc", "free",
-            "array",
-            "list",
-            "struct",
+            "object",
             "void",
             "in", "out",
+            "sizeof",
             "lock();", "unlock();",
             "return"};
 

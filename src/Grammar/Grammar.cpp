@@ -262,17 +262,17 @@ std::string szl::Grammar::binaryAdd(std::string in1, std::string in2)
     return res;
 }
 
-szl::Grammar *szl::Grammar::getGrammar(const std::string &name, const std::string &file, const std::string &line)
+szl::Grammar *szl::Grammar::getGrammar(const std::string &name)
 {
     if (root != nullptr)
     {
-        return root->getGrammar(name, file, line);
+        return root->getGrammar(name);
     }
     if (grammars.count(name) > 0)
         return grammars.at(name);
     if (name == "all")
         return this;
-    throw szl::SZLException("Grammar rule '" + name + "' not found", file, line);
+    throw szl::SZLException("Grammar rule '" + name + "' not found");
 }
 
 std::string szl::Grammar::compileScope(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -309,6 +309,24 @@ void szl::Grammar::initialize()
     {
         it.second->initialize();
     }
+    addSubRule("scope closed");
+    addSubRule("single variable declaration");
+    addSubRule("semicolon");
+    addSubRule("lock");
+    addSubRule("unlock");
+    addSubRule("out");
+    addSubRule("function call");
+    addSubRule("arrow");
+    addSubRule("free");
+    addSubRule("if");
+    addSubRule("while");
+    addSubRule("for");
+    addSubRule("set member field");
+    addSubRule("object creation");
+    addSubRule("assignment");
+    addSubRule("object declaration");
+    addSubRule("function declaration");
+    addSubRule("return");
 }
 
 std::string szl::Grammar::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -316,12 +334,12 @@ std::string szl::Grammar::execute(std::vector<szl::Token> &program, std::size_t 
     return executeSubRules(program, position, scope, internalState);
 }
 
-void szl::Grammar::addSubRule(const std::string id, const std::string &file, const std::string &line)
+void szl::Grammar::addSubRule(const std::string id)
 {
     if (root != nullptr)
-        subRules.push_back(root->getGrammar(id, file, line));
+        subRules.push_back(root->getGrammar(id));
     else
-        subRules.push_back(getGrammar(id, file, line));
+        subRules.push_back(getGrammar(id));
 }
 
 szl::Grammar::Grammar(Grammar *root) : root(root)
@@ -369,6 +387,13 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("questioned at", new szl::GrammarQuestionedAt(this));
     grammars.emplace("alloc", new szl::GrammarAlloc(this));
     grammars.emplace("free", new szl::GrammarFree(this));
+    grammars.emplace("conversion", new szl::GrammarConversion(this));
+    grammars.emplace("get member field", new szl::GrammarGetMemberField(this));
+    grammars.emplace("set member field", new szl::GrammarSetMemberField(this));
+    grammars.emplace("object declaration", new szl::GrammarObjectDeclaration(this));
+    grammars.emplace("object creation", new szl::GrammarObjectCreation(this));
+    grammars.emplace("sizeof", new szl::GrammarSizeOf(this));
+    grammars.emplace("chained operations", new szl::GrammarChainedOperations(this));
 }
 
 szl::Grammar::~Grammar()
@@ -444,6 +469,7 @@ szl::GrammarSingleVariableDeclaration::GrammarSingleVariableDeclaration(Grammar 
 
 void szl::GrammarSingleVariableDeclaration::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarAssignment::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -483,9 +509,7 @@ std::string szl::GrammarAssignment::execute(std::vector<szl::Token> &program, st
         if (!szl::objectTypes.count(scope.back()[name].getType()))
             throw szl::SZLException("Unknown type '" + scope.back()[name].getType() + "' in assignment", program[position].file, program[position].line);
         auto object = szl::objectTypes[scope.back()[name].getType()];
-        if (!object.getContents().count("operator="))
-            throw szl::SZLException("Object of type '" + scope.back()[name].getType() + "' does not have operator= defined", program[position].file, program[position].line);
-        return subRes + "LD HL,#" + std::to_string(scope.back()[name].getPosition()) + "\nPUSH HL\nCALL " + object.getContents()["operator="];
+        return subRes + "LD DE,#" + std::to_string(scope.back()[name].getPosition()) + "\nLD BC,#" + std::to_string(object.getSize()) + "\nLD H,B\nLD L,C\nADD HL,SP\nLDDR\nLD HL,#" + std::to_string(object.getSize()) + "\nADD HL,SP\nLD SP,HL\n";
     }
 }
 
@@ -493,6 +517,7 @@ szl::GrammarAssignment::GrammarAssignment(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarAssignment::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -679,6 +704,7 @@ szl::GrammarBrackets::GrammarBrackets(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarBrackets::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarSemicolon::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -877,15 +903,6 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
     {
         throw szl::SZLException("Bools can not be added", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator+"))
-            return resL + res + "\nCALL " + object.getContents()["operator+"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator+ defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Addition type unrecognized", program[position].file, program[position].line);
 }
 
@@ -893,6 +910,23 @@ szl::GrammarAddition::GrammarAddition(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarAddition::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarSubtraction::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -941,15 +975,6 @@ std::string szl::GrammarSubtraction::execute(std::vector<szl::Token> &program, s
     {
         throw szl::SZLException("Bools can not be subtracted", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator-"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator-"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator- defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Subtraction type unrecognized", program[position].file, program[position].line);
 }
 
@@ -957,6 +982,24 @@ szl::GrammarSubtraction::GrammarSubtraction(Grammar *root) : szl::Grammar(root) 
 
 void szl::GrammarSubtraction::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarMultiplication::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1017,15 +1060,6 @@ std::string szl::GrammarMultiplication::execute(std::vector<szl::Token> &program
     {
         throw szl::SZLException("Bools can not be multiplied", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator*"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator*"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator* defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Multiplication type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1033,6 +1067,19 @@ szl::GrammarMultiplication::GrammarMultiplication(Grammar *root) : szl::Grammar(
 
 void szl::GrammarMultiplication::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarDivision::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1093,15 +1140,6 @@ std::string szl::GrammarDivision::execute(std::vector<szl::Token> &program, std:
     {
         throw szl::SZLException("Bools can not be divided", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator/"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator/"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator/ defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Division type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1109,6 +1147,20 @@ szl::GrammarDivision::GrammarDivision(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarDivision::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarAnd::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1157,15 +1209,6 @@ std::string szl::GrammarAnd::execute(std::vector<szl::Token> &program, std::size
     {
         return resL + "PUSH HL\n" + res + "POP DE\nCALL @stdszllib_and_bool\n";
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator&"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator&"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator& defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("AND operation type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1173,6 +1216,33 @@ szl::GrammarAnd::GrammarAnd(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarAnd::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarOr::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1221,15 +1291,6 @@ std::string szl::GrammarOr::execute(std::vector<szl::Token> &program, std::size_
     {
         return resL + "PUSH HL\n" + res + "POP DE\nCALL @stdszllib_or_bool\n";
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator|"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator|"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator| defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("OR operation type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1237,6 +1298,35 @@ szl::GrammarOr::GrammarOr(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarOr::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("and");
+    addSubRule("xor");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarXor::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1285,15 +1375,6 @@ std::string szl::GrammarXor::execute(std::vector<szl::Token> &program, std::size
     {
         return resL + "PUSH HL\n" + res + "POP DE\nCALL @stdszllib_xor_bool\n";
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator^"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator^"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator^ defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("XOR operation type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1301,6 +1382,34 @@ szl::GrammarXor::GrammarXor(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarXor::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("and");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarModulo::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1361,15 +1470,6 @@ std::string szl::GrammarModulo::execute(std::vector<szl::Token> &program, std::s
     {
         throw szl::SZLException("Bools can not be arguments of modulo", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator%"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator%"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator% defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Modulo type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1377,6 +1477,21 @@ szl::GrammarModulo::GrammarModulo(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarModulo::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarNot::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1418,15 +1533,6 @@ std::string szl::GrammarNot::execute(std::vector<szl::Token> &program, std::size
     {
         return res + "CALL @stdszllib_negation_16bit\n";
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator~"))
-            return res + "CALL " + object.getContents()["operator~"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator~ defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("NOT operation type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1434,6 +1540,13 @@ szl::GrammarNot::GrammarNot(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarNot::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarNegation::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1477,15 +1590,6 @@ std::string szl::GrammarNegation::execute(std::vector<szl::Token> &program, std:
     {
         return res + "CALL @stdszllib_negation_16bit\n";
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator!"))
-            return res + "CALL " + object.getContents()["operator!"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator! defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Negation operation type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1493,6 +1597,14 @@ szl::GrammarNegation::GrammarNegation(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarNegation::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarShiftLeft::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1541,15 +1653,6 @@ std::string szl::GrammarShiftLeft::execute(std::vector<szl::Token> &program, std
     {
         throw szl::SZLException("Bools can not be arguments of left shift", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator<<"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator<<"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator<< defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Left shift type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1557,6 +1660,25 @@ szl::GrammarShiftLeft::GrammarShiftLeft(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarShiftLeft::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarShiftRight::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1605,15 +1727,6 @@ std::string szl::GrammarShiftRight::execute(std::vector<szl::Token> &program, st
     {
         throw szl::SZLException("Bools can not be arguments of right shift", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator>>"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator>>"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator>> defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Right shift type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1621,6 +1734,26 @@ szl::GrammarShiftRight::GrammarShiftRight(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarShiftRight::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarNotEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1672,15 +1805,6 @@ std::string szl::GrammarNotEqual::execute(std::vector<szl::Token> &program, std:
     {
         return resL + "PUSH HL\n" + res + "POP DE\nCALL @stdszllib_xor_bool\n";
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        if (object.getContents().count("operator!="))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator!="];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator!= defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Not equal comparison type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1688,6 +1812,31 @@ szl::GrammarNotEqual::GrammarNotEqual(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarNotEqual::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1739,16 +1888,6 @@ std::string szl::GrammarEqual::execute(std::vector<szl::Token> &program, std::si
     {
         return resL + "PUSH HL\n" + res + "POP DE\nCALL @stdszllib_equal_bool\n";
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        internalState.back() = "bool";
-        if (object.getContents().count("operator=="))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator=="];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator== defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Equal comparison type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1756,6 +1895,32 @@ szl::GrammarEqual::GrammarEqual(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarEqual::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarGreater::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1821,16 +1986,6 @@ std::string szl::GrammarGreater::execute(std::vector<szl::Token> &program, std::
     {
         throw szl::SZLException("Boolean values can not be arguments of greater comparison", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        internalState.back() = "bool";
-        if (object.getContents().count("operator>"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator>"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator> defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Greater comparison type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1838,6 +1993,27 @@ szl::GrammarGreater::GrammarGreater(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarGreater::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarLess::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1903,16 +2079,6 @@ std::string szl::GrammarLess::execute(std::vector<szl::Token> &program, std::siz
     {
         throw szl::SZLException("Boolean values can not be arguments of less comparison", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        internalState.back() = "bool";
-        if (object.getContents().count("operator<"))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator<"];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator< defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Less comparison type unrecognized", program[position].file, program[position].line);
 }
 
@@ -1920,6 +2086,29 @@ szl::GrammarLess::GrammarLess(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarLess::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarGreaterOrEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1985,16 +2174,6 @@ std::string szl::GrammarGreaterOrEqual::execute(std::vector<szl::Token> &program
     {
         throw szl::SZLException("Boolean values can not be arguments of greater or equal comparison", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        internalState.back() = "bool";
-        if (object.getContents().count("operator>="))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator>="];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator>= defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Greater or equal comparison type unrecognized", program[position].file, program[position].line);
 }
 
@@ -2002,6 +2181,28 @@ szl::GrammarGreaterOrEqual::GrammarGreaterOrEqual(Grammar *root) : szl::Grammar(
 
 void szl::GrammarGreaterOrEqual::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarLessOrEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2067,16 +2268,6 @@ std::string szl::GrammarLessOrEqual::execute(std::vector<szl::Token> &program, s
     {
         throw szl::SZLException("Boolean values can not be arguments of less or equal comparison", program[position].file, program[position].line);
     }
-
-    // OBJECT
-    if (szl::objectTypes.count(internalState.back()))
-    {
-        auto object = szl::objectTypes[internalState.back()];
-        internalState.back() = "bool";
-        if (object.getContents().count("operator<="))
-            return resL + res + "PUSH HL\nCALL " + object.getContents()["operator<="];
-        throw szl::SZLException("Object of type '" + internalState.back() + "' does not have operator<= defined", program[position].file, program[position].line);
-    }
     throw szl::SZLException("Less or equal comparison type unrecognized", program[position].file, program[position].line);
 }
 
@@ -2084,6 +2275,30 @@ szl::GrammarLessOrEqual::GrammarLessOrEqual(Grammar *root) : szl::Grammar(root) 
 
 void szl::GrammarLessOrEqual::initialize()
 {
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarIf::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2134,6 +2349,7 @@ szl::GrammarIf::GrammarIf(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarIf::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarScopeClosed::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2203,6 +2419,7 @@ szl::GrammarWhile::GrammarWhile(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarWhile::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarFor::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2283,6 +2500,7 @@ szl::GrammarFor::GrammarFor(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarFor::initialize()
 {
+    addSubRule("chained operations");
 }
 
 szl::Function szl::GrammarFunctionDeclaration::createFunctionTableEntry(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2433,6 +2651,7 @@ szl::GrammarReturn::GrammarReturn(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarReturn::initialize()
 {
+    addSubRule("chained operations");
 }
 
 szl::Function szl::GrammarFunctionCall::getFunctionTableEntry(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2494,6 +2713,7 @@ szl::GrammarFunctionCall::GrammarFunctionCall(Grammar *root) : szl::Grammar(root
 
 void szl::GrammarFunctionCall::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarLock::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2555,6 +2775,7 @@ szl::GrammarIn::GrammarIn(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarIn::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarOut::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2600,6 +2821,7 @@ szl::GrammarOut::GrammarOut(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarOut::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarAt::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2648,6 +2870,7 @@ szl::GrammarAt::GrammarAt(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarAt::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarArrow::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2684,7 +2907,7 @@ std::string szl::GrammarArrow::execute(std::vector<szl::Token> &program, std::si
     // OBJECT
     if (szl::objectTypes.count(internalState.back()))
     {
-        return resL + res + "PUSH HL\nCALL " + szl::objectTypes[internalState.back()].getContents()["operator="];
+        return resL + res + "\nEX DE,HL\nLD BC,#" + std::to_string(szl::objectTypes[internalState.back()].getSize()) + "\nLD H,B\nLD L,C\nADD HL,SP\nLDDR\nLD HL,#" + std::to_string(szl::objectTypes[internalState.back()].getSize()) + "\nADD HL,SP\nLD SP,HL\n";
     }
     throw szl::SZLException("-> type not recognized", program[position].file, program[position].line);
 }
@@ -2693,6 +2916,7 @@ szl::GrammarArrow::GrammarArrow(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarArrow::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarQuestionedAt::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2758,6 +2982,7 @@ szl::GrammarAlloc::GrammarAlloc(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarAlloc::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarFree::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2811,4 +3036,383 @@ szl::GrammarFree::GrammarFree(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarFree::initialize()
 {
+    addSubRule("chained operations");
+}
+
+std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    auto newPos = position;
+    std::string res;
+    if (program[newPos].category != szl::TokenCategory::Keyword)
+        return "";
+    auto type = program[newPos++].content;
+    if (type != "int" && type != "uint" && type != "char" && type != "long" && type != "ulong" && type != "float")
+        return "";
+    if (program.size() <= newPos)
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Bracket)
+        return "";
+    if (program[newPos++].content != "(")
+        return "";
+    if (program.size() <= newPos)
+        throw szl::SZLException("Unexpected EOF when converting to " + type, program[position].file, program[position].line);
+    res = executeSubRules(program, position = newPos, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("Conversion to " + type + " expects one parameter", program[position].file, program[position].line);
+    if (internalState.size() < 1)
+        throw szl::SZLException("Conversion to " + type + " expects one parameter", program[position].file, program[position].line);
+    if (internalState.back() != "int" && internalState.back() != "uint" && internalState.back() != "char" && internalState.back() != "long" && internalState.back() != "ulong" && internalState.back() != "float")
+        throw szl::SZLException("Conversion to " + type + " expects one parameter of type int, uint, char, long, ulong or float", program[position].file, program[position].line);
+    if (program.size() <= position)
+        throw szl::SZLException("Unexpected EOF when converting " + internalState.back() + " to " + type, program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error when converting " + internalState.back() + " to " + type, program[position].file, program[position].line);
+    if (program[position++].content != ")")
+        throw szl::SZLException("Syntax error when converting " + internalState.back() + " to " + type, program[position].file, program[position].line);
+    internalState.back() = type;
+    if (internalState.back() == type)
+        return res;
+    if (internalState.back() == "float")
+    {
+        if (type == "long")
+            return res + "CALL @stdszllib_conversion_float_to_long\n";
+        if (type == "ulong")
+            return res + "CALL @stdszllib_conversion_float_to_ulong\n";
+        if (type == "int")
+            return res + "CALL @stdszllib_conversion_float_to_int\n";
+        if (type == "uint" || type == "char")
+            return res + "CALL @stdszllib_conversion_float_to_uint\n";
+    }
+    else if (internalState.back() == "long")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_long_to_float\n";
+        if (type == "ulong")
+            return res;
+        if (type == "int" || type == "uint" || type == "char")
+            return res + "EX DE,HL\n";
+    }
+    else if (internalState.back() == "ulong")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_ulong_to_float\n";
+        if (type == "long")
+            return res;
+        if (type == "int" || type == "uint" || type == "char")
+            return res + "EX DE,HL\n";
+    }
+    else if (internalState.back() == "int")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_int_to_float\n";
+        if (type == "long" || type == "ulong")
+            return res + "EX DE,HL\nLD HL,%0\n";
+        if (type == "uint" || type == "char")
+            return res;
+    }
+    else if (internalState.back() == "uint" || internalState.back() == "char")
+    {
+        if (type == "float")
+            return res + "CALL @stdszllib_conversion_uint_to_float\n";
+        if (type == "long" || type == "ulong")
+            return res + "EX DE,HL\nLD HL,%0\n";
+        if (type == "int")
+            return res;
+    }
+    throw szl::SZLException("No function " + type + "(" + internalState.back() + ") found", program[position].file, program[position].line);
+}
+
+szl::GrammarConversion::GrammarConversion(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarConversion::initialize()
+{
+    addSubRule("chained operations");
+}
+
+std::string szl::GrammarGetMemberField::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Identifier)
+        return "";
+    auto name = program[position].content;
+    if (!scope.back().exists(name))
+        return "";
+    auto variable = scope.back()[name];
+    if (!szl::objectTypes.count(variable.getType()))
+        return "";
+    auto object = szl::objectTypes[variable.getType()];
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (program[position++].content != ".")
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    auto memberName = program[position].content;
+    if (!object.getContents().count(memberName))
+        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
+    auto member = object.getContents()[memberName];
+    internalState.push_back(member);
+    if (!szl::objectTypes.count(member))
+    {
+        if (member == "int" || member == "uint" || member == "char" || member == "bool")
+            return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD D,(HL)\nDEC HL\nLD E,(HL)\nEX DE,HL\n";
+        if (member == "long" || member == "ulong" || member == "float")
+            return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD B,(HL)\nDEC HL\nLD C,(HL)\nDEC HL\nLD D,(HL)\nDEC HL\nLD E,(HL)\nLD H,B\nLD L,C\n";
+        throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
+    }
+    return "LD HL,%0\nADD HL,SP\nDEC HL\n EX DE,HL\nLD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD BC,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
+}
+
+szl::GrammarGetMemberField::GrammarGetMemberField(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarGetMemberField::initialize()
+{
+}
+
+std::string szl::GrammarSetMemberField::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Identifier)
+        return "";
+    auto name = program[position].content;
+    if (!scope.back().exists(name))
+        return "";
+    auto variable = scope.back()[name];
+    if (!szl::objectTypes.count(variable.getType()))
+        return "";
+    if (position + 4 >= program.size())
+        return "";
+    if (program[position + 3].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[position + 3].content != "=")
+        return "";
+    auto object = szl::objectTypes[variable.getType()];
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (program[position++].content != ".")
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
+    auto memberName = program[position].content;
+    if (!object.getContents().count(memberName))
+        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
+    auto member = object.getContents()[memberName];
+    auto pos = std::to_string(object.getVariablePosition(variable.getPosition(), memberName));
+    auto res = executeSubRules(program, position = position + 2, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("No valid value to assign to member '" + memberName + "'", program[position].file, program[position].line);
+    if (!internalState.size())
+        throw szl::SZLException("No valid value to assign to member '" + memberName + "'", program[position].file, program[position].line);
+    if (internalState.back() != member)
+        throw szl::SZLException("Attempting to write value of type '" + internalState.back() + "' to member '" + memberName + "', which is of type '" + member + "'", program[position].file, program[position].line);
+    internalState.pop_back();
+    if (!szl::objectTypes.count(member))
+    {
+        if (member == "int" || member == "uint" || member == "char" || member == "bool")
+            return res + "EX DE,HL\nLD HL,#" + pos + "\nLD (HL),D\nDEC HL\nLD (HL),E\n";
+        if (member == "long" || member == "ulong" || member == "float")
+            return res + "LD B,H\nLD C,L\nLD HL,#" + pos + "\nLD (HL),B\nDEC HL\nLD (HL),C\nDEC HL\nLD (HL),D\nDEC HL\nLD (HL),E\n";
+        throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
+    }
+    return res + "LD DE,#" + pos + "\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLD B,H\nLD C,L\nADD HL,SP\nLDDR\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nADD HL,SP\nLD SP,HL\n";
+}
+
+szl::GrammarSetMemberField::GrammarSetMemberField(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarSetMemberField::initialize()
+{
+    addSubRule("chained operations");
+}
+
+std::string szl::GrammarObjectDeclaration::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[position].content != "object")
+        return "";
+    if (scope.size() > 1)
+        throw szl::SZLException("Objects can only be declared in the global scope", program[position].file, program[position].line);
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while declaring object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while declaring object", program[position].file, program[position].line);
+    auto name = program[position].content;
+    if (szl::objectTypes.count(name))
+        throw szl::SZLException("Object named '" + name + "' already exists", program[position].file, program[position].line);
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF while declaring object", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error while declaring object", program[position].file, program[position].line);
+    if (program[position++].content != "{")
+        throw szl::SZLException("Syntax error while declaring object", program[position].file, program[position].line);
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF while declaring object", program[position].file, program[position].line);
+    szl::objectTypes.emplace(name, szl::Object());
+    szl::objectTypes[name].setName(name);
+    for (int offset = 0; position + 3 < program.size();)
+    {
+        if (program[position].category == szl::TokenCategory::Bracket)
+        {
+            if (program[position].content == "}")
+                break;
+        }
+        if (program[position].category != szl::TokenCategory::Keyword && program[position].category != szl::TokenCategory::Identifier)
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        auto type = program[position++].content;
+        if (program[position].category != szl::TokenCategory::Identifier)
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        auto memberName = program[position++].content;
+        if (program[position].category != szl::TokenCategory::Punctuation)
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        if (program[position++].content != ";")
+            throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
+        if (!szl::objectTypes.count(type))
+        {
+            if (type != "int" && type != "uint" && type != "char" && type != "bool" && type != "long" && type != "ulong" && type != "float")
+                throw szl::SZLException("Member field type '" + type + "' not recognized", program[position].file, program[position].line);
+            int size = 0;
+            if (type == "int" || type == "uint" || type == "char" || type == "bool")
+                size = 2;
+            else if (type == "long" || type == "ulong" || type == "float")
+                size = 4;
+            szl::objectTypes[name].getContents().emplace(memberName, type);
+            szl::objectTypes[name].getVariables().push_back({memberName, szl::Variable(offset, size, type)});
+            offset += size;
+        }
+    }
+    return "\n";
+}
+
+szl::GrammarObjectDeclaration::GrammarObjectDeclaration(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarObjectDeclaration::initialize()
+{
+}
+
+std::string szl::GrammarObjectCreation::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Identifier)
+        return "";
+    auto type = program[position].content;
+    if (!szl::objectTypes.count(type))
+        return "";
+    auto newPos = position + 1;
+    if (newPos >= program.size())
+        throw szl::SZLException("Unexpected EOF while creating object of type '" + type + "'", program[position].file, program[position].line);
+    if (program[newPos].category != szl::TokenCategory::Identifier)
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    auto name = program[newPos++].content;
+    if (scope.back().exists(name))
+        throw szl::SZLException("Redeclaration of variable '" + name + "'", program[position].file, program[position].line);
+    if (functions.count(name))
+        throw szl::SZLException("Redeclaration of function '" + name + "'", program[position].file, program[position].line);
+    if (position = newPos + 1 >= program.size())
+        throw szl::SZLException("Unexpected EOF while creating object", program[position - 1].file, program[position - 1].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    if (program[position++].content != ";")
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    auto object = szl::objectTypes[type];
+    scope.back().insertVariable(name, object.getSize(), type);
+    return "LD DE,#" + std::to_string(object.getSize()) + "LD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
+}
+
+szl::GrammarObjectCreation::GrammarObjectCreation(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarObjectCreation::initialize()
+{
+}
+
+std::string szl::GrammarSizeOf::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    if (program[position].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[position].content != "sizeof")
+        return "";
+    if (program.size() <= ++position)
+        throw szl::SZLException("Unexpected EOF while calling 'sizeof'", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error while calling 'sizeof'", program[position].file, program[position].line);
+    if (program[position++].content != "(")
+        throw szl::SZLException("Syntax error while calling 'sizeof'", program[position].file, program[position].line);
+    if (program.size() <= position)
+        throw szl::SZLException("Unexpected EOF while calling 'sizeof'", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Identifier && program[position].category != szl::TokenCategory::Keyword)
+        throw szl::SZLException("Syntax error while calling 'sizeof'", program[position].file, program[position].line);
+    auto type = program[position++].content;
+    internalState.push_back("ulong");
+    if (!szl::objectTypes.count(type))
+    {
+        if (type == "int" || type == "uint" || type == "char" || type == "bool")
+            return "LD DE,#2\nLD HL,%0\n";
+        if (type == "long" || type == "ulong" || type == "float")
+            return "LD DE,#4\nLD HL,%0\n";
+        throw szl::SZLException("Type '" + type + "' not recognized", program[position].file, program[position].line);
+    }
+    auto size = fromDec(std::to_string(szl::objectTypes[type].getSize()));
+    if (size.length() > 32)
+        throw szl::SZLException("Size of object '" + type + "' is too large", program[position].file, program[position].line);
+    if (size.length() > 16)
+        return "LD DE,%" + size.substr(size.length() - 16, 16) + "\nLD HL,%" + size.substr(0, size.length() - 16) + "\n";
+    return "LD DE,%" + size + "\nLD HL,%0\n";
+}
+
+szl::GrammarSizeOf::GrammarSizeOf(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarSizeOf::initialize()
+{
+}
+
+std::string szl::GrammarChainedOperations::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    std::string res, in;
+    do
+    {
+        in = "";
+        in = executeSubRules(program, position, scope, internalState);
+        res += in;
+    } while (in.length());
+    return res;
+}
+
+szl::GrammarChainedOperations::GrammarChainedOperations(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarChainedOperations::initialize()
+{
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("or");
+    addSubRule("xor");
+    addSubRule("and");
+    addSubRule("equal");
+    addSubRule("not equal");
+    addSubRule("less or equal");
+    addSubRule("less");
+    addSubRule("greater or equal");
+    addSubRule("greater");
+    addSubRule("shift right");
+    addSubRule("shift left");
+    addSubRule("subtraction");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("modulo");
+    addSubRule("division");
+    addSubRule("multiplication");
+    addSubRule("negation");
+    addSubRule("not");
+    addSubRule("identifier");
+    addSubRule("literal");
 }

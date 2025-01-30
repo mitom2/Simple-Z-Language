@@ -48,7 +48,7 @@ namespace szl
 
         static std::string binaryAdd(std::string in1, std::string in2);
 
-        Grammar *getGrammar(const std::string &name, const std::string &file, const std::string &line);
+        Grammar *getGrammar(const std::string &name);
 
         std::string compileScope(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const;
 
@@ -65,7 +65,7 @@ namespace szl
          */
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const;
 
-        void addSubRule(const std::string id, const std::string &file, const std::string &line);
+        void addSubRule(const std::string id);
 
         Grammar(Grammar *root = nullptr);
 
@@ -484,6 +484,76 @@ namespace szl
         virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
 
         GrammarFree(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarConversion : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarConversion(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarGetMemberField : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarGetMemberField(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarSetMemberField : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarSetMemberField(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarObjectDeclaration : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarObjectDeclaration(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarObjectCreation : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarObjectCreation(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarSizeOf : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarSizeOf(Grammar *root);
+
+        virtual void initialize();
+    };
+
+    class GrammarChainedOperations : public Grammar
+    {
+    public:
+        virtual std::string execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const override;
+
+        GrammarChainedOperations(Grammar *root);
 
         virtual void initialize();
     };
