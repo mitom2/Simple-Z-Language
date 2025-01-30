@@ -910,7 +910,23 @@ szl::GrammarAddition::GrammarAddition(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarAddition::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarSubtraction::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -966,7 +982,24 @@ szl::GrammarSubtraction::GrammarSubtraction(Grammar *root) : szl::Grammar(root) 
 
 void szl::GrammarSubtraction::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarMultiplication::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1034,7 +1067,19 @@ szl::GrammarMultiplication::GrammarMultiplication(Grammar *root) : szl::Grammar(
 
 void szl::GrammarMultiplication::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarDivision::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1102,7 +1147,20 @@ szl::GrammarDivision::GrammarDivision(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarDivision::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarAnd::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1158,7 +1216,33 @@ szl::GrammarAnd::GrammarAnd(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarAnd::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarOr::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1214,7 +1298,35 @@ szl::GrammarOr::GrammarOr(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarOr::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("and");
+    addSubRule("xor");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarXor::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1270,7 +1382,34 @@ szl::GrammarXor::GrammarXor(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarXor::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("equal");
+    addSubRule("and");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarModulo::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1338,7 +1477,21 @@ szl::GrammarModulo::GrammarModulo(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarModulo::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarNot::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1387,7 +1540,13 @@ szl::GrammarNot::GrammarNot(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarNot::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarNegation::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1438,7 +1597,14 @@ szl::GrammarNegation::GrammarNegation(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarNegation::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarShiftLeft::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1494,7 +1660,25 @@ szl::GrammarShiftLeft::GrammarShiftLeft(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarShiftLeft::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarShiftRight::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1550,7 +1734,26 @@ szl::GrammarShiftRight::GrammarShiftRight(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarShiftRight::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarNotEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1609,7 +1812,31 @@ szl::GrammarNotEqual::GrammarNotEqual(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarNotEqual::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1668,7 +1895,32 @@ szl::GrammarEqual::GrammarEqual(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarEqual::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("less or equal");
+    addSubRule("not equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarGreater::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1741,7 +1993,27 @@ szl::GrammarGreater::GrammarGreater(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarGreater::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarLess::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1814,7 +2086,29 @@ szl::GrammarLess::GrammarLess(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarLess::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarGreaterOrEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1887,7 +2181,28 @@ szl::GrammarGreaterOrEqual::GrammarGreaterOrEqual(Grammar *root) : szl::Grammar(
 
 void szl::GrammarGreaterOrEqual::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarLessOrEqual::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -1960,7 +2275,30 @@ szl::GrammarLessOrEqual::GrammarLessOrEqual(Grammar *root) : szl::Grammar(root) 
 
 void szl::GrammarLessOrEqual::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("brackets");
+    addSubRule("conversion");
+    addSubRule("in");
+    addSubRule("function call");
+    addSubRule("get member field");
+    addSubRule("not");
+    addSubRule("negation");
+    addSubRule("at");
+    addSubRule("questioned at");
+    addSubRule("sizeof");
+    addSubRule("alloc");
+    addSubRule("multiplication");
+    addSubRule("division");
+    addSubRule("modulo");
+    addSubRule("two literals addition");
+    addSubRule("addition");
+    addSubRule("subtraction");
+    addSubRule("shift left");
+    addSubRule("shift right");
+    addSubRule("greater");
+    addSubRule("greater or equal");
+    addSubRule("less");
+    addSubRule("identifier");
+    addSubRule("literal");
 }
 
 std::string szl::GrammarIf::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -3052,29 +3390,29 @@ void szl::GrammarChainedOperations::initialize()
     addSubRule("in");
     addSubRule("function call");
     addSubRule("get member field");
-    addSubRule("not");
-    addSubRule("negation");
     addSubRule("at");
     addSubRule("questioned at");
     addSubRule("sizeof");
     addSubRule("alloc");
-    addSubRule("multiplication");
-    addSubRule("division");
-    addSubRule("modulo");
+    addSubRule("or");
+    addSubRule("xor");
+    addSubRule("and");
+    addSubRule("equal");
+    addSubRule("not equal");
+    addSubRule("less or equal");
+    addSubRule("less");
+    addSubRule("greater or equal");
+    addSubRule("greater");
+    addSubRule("shift right");
+    addSubRule("shift left");
+    addSubRule("subtraction");
     addSubRule("two literals addition");
     addSubRule("addition");
-    addSubRule("subtraction");
-    addSubRule("shift left");
-    addSubRule("shift right");
-    addSubRule("greater");
-    addSubRule("greater or equal");
-    addSubRule("less");
-    addSubRule("less or equal");
-    addSubRule("not equal");
-    addSubRule("equal");
-    addSubRule("and");
-    addSubRule("xor");
-    addSubRule("or");
+    addSubRule("modulo");
+    addSubRule("division");
+    addSubRule("multiplication");
+    addSubRule("negation");
+    addSubRule("not");
     addSubRule("identifier");
     addSubRule("literal");
 }
