@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(src/)
+add_library(SZAMAN INTERFACE)
+target_include_directories(SZAMAN INTERFACE inc/SZAMAN)
 
 add_executable(Simple-Z-Language 
 src/main.cpp
@@ -28,3 +30,4 @@ src/Tables/Tables.cpp
 src/Function/Function.cpp
 src/Object/Object.cpp
 )
+target_link_libraries(Simple-Z-Language PRIVATE SZAMAN)

@@ -12,6 +12,7 @@
 #include "Rules/RuleKeyword.hpp"
 #include "Rules/RuleIdentifier.hpp"
 #include "Grammar/Grammar.hpp"
+#include "SZAMAN.hpp"
 #include <fstream>
 #include <iostream>
 #include <vector>
