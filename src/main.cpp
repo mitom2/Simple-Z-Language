@@ -3,6 +3,6 @@
 
 int main()
 {
-    szl::compile("def.szl", "def.ia");
+    szl::compile("def.szl", "def.oi");
     return 0;
 }

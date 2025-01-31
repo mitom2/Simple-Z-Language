@@ -31,3 +31,10 @@ src/Function/Function.cpp
 src/Object/Object.cpp
 )
 target_link_libraries(Simple-Z-Language PRIVATE SZAMAN)
+add_custom_command(TARGET Simple-Z-Language POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+    ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/res
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/res
+    ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/res
+)

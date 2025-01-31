@@ -74,5 +74,20 @@ void szl::compile(const std::string &in, const std::string &out)
             throw szl::SZLException("Syntax error");
         }
     }
-    std::cout << res << " " << std::endl;
+    std::string filename = in + ".ia", size = "64k", start = "0", output = out;
+    std::ofstream file(filename);
+    if (!file.good())
+        throw szl::SZLException("Output file access denied");
+    /** std::ifstream stdszllib("res/stdszllib.ia");
+     if (!stdszllib.good())
+         throw szl::SZLException("Standard library not found");
+     std::string line;
+     while (std::getline(stdszllib, line))
+     {
+         file << line + "\n";
+     }
+     stdszllib.close();*/
+    file << ".include res/stdszllib.ia\n" + res;
+    file.close();
+    szaman::run(filename, output, size, start, false, false);
 }
