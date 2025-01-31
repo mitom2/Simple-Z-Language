@@ -1107,13 +1107,13 @@
     JP Z,@stdszllibGreaterLongPX
     BIT 7,B
     JP Z,@stdszllibGreaterLongRet0
-    CALL stdszllib_absolute_pair_long
-    CALL stdszllib_less_ulong
+    CALL @stdszllib_absolute_pair_long
+    CALL @stdszllib_less_ulong
     RET
     @stdszllibGreaterLongPX
     BIT 7,B
     JP NZ,@stdszllibGreaterLongRet1
-    CALL stdszllib_greater_ulong
+    CALL @stdszllib_greater_ulong
     RET
     @stdszllibGreaterLongRet0
     LD HL,%0
@@ -1162,7 +1162,7 @@
     SBC HL,BC
     JP Z,@stdszllibGreaterOrEqualUlongEqual
     JP NC,@stdszllibGreaterOrEqualUlongRet1
-    @stdszllibGreaterUlongRet0
+    @stdszllibGreaterOrEqualUlongRet0
     LD HL,%0
     RET
     @stdszllibGreaterOrEqualUlongEqual
@@ -1189,13 +1189,13 @@
     JP Z,@stdszllibGreaterOrEqualLongPX
     BIT 7,B
     JP Z,@stdszllibGreaterOrEqualLongRet0
-    CALL stdszllib_absolute_pair_long
-    CALL stdszllib_less_or_equal_ulong
+    CALL @stdszllib_absolute_pair_long
+    CALL @stdszllib_less_or_equal_ulong
     RET
     @stdszllibGreaterOrEqualLongPX
     BIT 7,B
     JP NZ,@stdszllibGreaterOrEqualLongRet1
-    CALL stdszllib_greater_or_equal_ulong
+    CALL @stdszllib_greater_or_equal_ulong
     RET
     @stdszllibGreaterOrEqualLongRet0
     LD HL,%0
@@ -1275,7 +1275,7 @@
     JP Z,@stdszllibLessOrEqualLongPX
     BIT 7,B
     JP Z,@stdszllibLessOrEqualLongRet1
-    CALL stdszllib_absolute_pair_long
+    CALL @stdszllib_absolute_pair_long
     OR A
     SBC HL,BC
     EX AF,AF'
@@ -1293,12 +1293,12 @@
     CP E
     JP Z,@stdszllibLessOrEqualLongRet1
     @stdszllibLessOrEqualLongNoEq
-    CALL stdszllib_greater_ulong
+    CALL @stdszllib_greater_ulong
     RET
     @stdszllibLessOrEqualLongPX
     BIT 7,B
     JP NZ,@stdszllibLessOrEqualLongRet0
-    CALL stdszllib_less_or_equal_ulong
+    CALL @stdszllib_less_or_equal_ulong
     RET
     @stdszllibLessOrEqualLongRet0
     LD HL,%0
@@ -1373,13 +1373,13 @@
     JP Z,@stdszllibLessLongPX
     BIT 7,B
     JP Z,@stdszllibLessLongRet1
-    CALL stdszllib_absolute_pair_long
-    CALL stdszllib_greater_ulong
+    CALL @stdszllib_absolute_pair_long
+    CALL @stdszllib_greater_ulong
     RET
     @stdszllibLessLongPX
     BIT 7,B
     JP NZ,@stdszllibLessLongRet0
-    CALL stdszllib_less_ulong
+    CALL @stdszllib_less_ulong
     RET
     @stdszllibLessLongRet0
     LD HL,%0
@@ -1485,7 +1485,7 @@
     LD B,D
     LD C,E
     LD A,L
-    LD HL,2
+    LD HL,#2
     ADD HL,SP
     LD E,(HL)
     INC HL
@@ -1519,7 +1519,7 @@
     LD B,D
     LD C,E
     LD A,L
-    LD HL,6
+    LD HL,#6
     ADD HL,SP
     LD E,(HL)
     INC HL
