@@ -100,17 +100,10 @@ namespace szaman
 			}
 			if (labelExtraction == true)
 			{
-				if (code[i] == ';')
+				if (code[i] == ';' || code[i] == ' ' || code[i] == '\t')
 				{
 					labelExtraction = false;
 					finished = true;
-					code.erase(i, 1);
-					i--;
-					continue;
-				}
-				else if (code[i] == ' ' || code[i] == '\t')
-				{
-					std::cout << "[WRN 004] [" << std::to_string(line) << "] Forbidden character inside label name.\n";
 					code.erase(i, 1);
 					i--;
 					continue;
@@ -1086,14 +1079,14 @@ namespace szaman
 
 		{"ret", {0b11001001, 255}},
 
-		{"ret nz,n", {0b11000000, 0}},
-		{"ret z,n", {0b11001000, 0}},
-		{"ret nc,n", {0b11010000, 0}},
-		{"ret c,n", {0b11011000, 0}},
-		{"ret po,n", {0b11100000, 0}},
-		{"ret pe,n", {0b11101000, 0}},
-		{"ret p,n", {0b11110000, 0}},
-		{"ret m,n", {0b11111000, 0}},
+		{"ret nz", {0b11000000, 0}},
+		{"ret z", {0b11001000, 0}},
+		{"ret nc", {0b11010000, 0}},
+		{"ret c", {0b11011000, 0}},
+		{"ret po", {0b11100000, 0}},
+		{"ret pe", {0b11101000, 0}},
+		{"ret p", {0b11110000, 0}},
+		{"ret m", {0b11111000, 0}},
 
 		{"reti", {0b1110110101001101, 255}},
 
