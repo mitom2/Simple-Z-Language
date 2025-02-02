@@ -1,0 +1,24 @@
+// This is an example of boolean operations. //
+#program "The_XOR_Files"
+
+void main()
+{
+    // A little setup, before the actual example //
+    int a = 6;
+    int b = 4;
+
+    // And now, Bool! //
+    bool c = true; // Boolean values are a special kind of variable, that can only hold one of two values: true or false. //
+    bool d = false;
+
+    // Some operations result in boolean values, instead of numerical ones: //
+    bool res = !a; // ! means inversion (or NOT). In this case, res = false //
+    res = a == b;  // Checks if a and b are equal, res = false //
+    res = a != b;  // Checks if a and b are not equal, res = true //
+    res = a < b;   // Checks if a is smaller than b, res = false //
+    res = a > b;   // Checks if a is larger than b, res = true //
+    res = a <= b;  // Checks if a is smaller or equal to b, res = false //
+    res = a >= b;  // Checks if a is larger or equal to b, res = true //
+}
+
+// Here this example ends. //

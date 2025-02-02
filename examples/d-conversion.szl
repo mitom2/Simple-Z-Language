@@ -1,0 +1,17 @@
+// This is an example of conversion between types. //
+#program "Lord_of_the_Casts"
+
+void main()
+{
+    float a = float(12); // To convert variables between types, you should write the desired type, and then in brackets place the original value. //
+    long b = long(a);    // Works with variables too! //
+
+    // Below included are more examples. 'u' before variable type means 'unsigned' (no negative values allowed there): //
+    uint c = uint(1);
+    int d = int(c);
+    long e = long(int(c) + d);
+    ulong f = 5;
+    ulong g = g + ulong(e + long(d + int(b)));
+}
+
+// Here this example ends. //

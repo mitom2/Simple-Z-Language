@@ -1,0 +1,10 @@
+// This example is a simple program that does nothing. Super hard task! //
+#program "The_Lazy_One"
+
+// All programs must contain exactly one function called main. //
+void main()
+{
+    // Here execution of the code begins. //
+}
+
+// Here this example ends. //

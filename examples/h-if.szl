@@ -1,0 +1,61 @@
+// This is an example of conditional operation called if. //
+#program "Guardians_of_the_Condition"
+
+void main()
+{
+    int a = 6;
+    int b = 4;
+    int res = 0;
+    if (a > b)
+    {
+        res = a + b; // Code between '{' and '}' will only be executed if condition inside if evaluates to true. In this case if a is greater than b the values are added. //
+    }
+    else if (a > b)
+    {
+        res = a - b; // If first condition is not met, additional may be set up using if else to carry out different code. In this case if a is lesser than b subtraction is performed. //
+    }
+    else
+    {
+        res = a * b; // If all defined conditions are not met, else with no if at the end will execute its code. In this case a and b will be multiplied. //
+    }
+
+    if (true) // This condition will always be met... //
+    {
+        res = 0;
+    }
+    else
+    {
+        res = 1; // ... so this code will never be executed. //
+    }
+
+    if (false) // This condition will never be met... //
+    {
+        res = 1;
+    }
+    else
+    {
+        res = 0; // ... so this code will be executed every time. //
+    }
+
+    if (true)
+    {
+        int c = 13; // We can define new variables inside body of the if. //
+    }
+    // c = 17; <- WRONG! After if concludes, the variable no longer exists! This goes for all cases where variable is created between two brackets. //
+
+    if (true)
+    {
+        res = 3; // This code will be excuted every time... //
+    }
+    else if (true)
+    {
+        res = 2; // ... but this one, despite also being true, will never. It is because previous condition is already met. //
+    }
+
+    if ((a == b) | (a < 2)) // More advanced conditions are also possible thanks to boolean logic. //
+    {
+        res = 0;
+    }
+}
+
+// Here this example ends. //

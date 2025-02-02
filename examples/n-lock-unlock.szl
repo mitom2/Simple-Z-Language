@@ -1,0 +1,12 @@
+// This is an example of disabling and enabling context switching. //
+#program "Mutex_Impossible"
+
+void main()
+{
+    // In actual device, it is possible that a program is paused to allow for execution of another. Sometimes we may want to prevent that. //
+    lock();   // This function is used to block any attempts to pause the execution of current program. //
+    unlock(); // Once pausing is acceptable, unlock(); can be called. //
+    // Note that locking your program for prolonged time may affect overall system performance. //
+}
+
+// Here this example ends. //

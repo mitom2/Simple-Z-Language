@@ -1,0 +1,31 @@
+// This is an example of memory management. //
+#program "Remember_Remember_The_Fifth_Of_November"
+
+void main()
+{
+    uint size = sizeof(int); // Using sizeof function we can get size (in bytes) of a variable type. It is needed for later. //
+
+    // Using pointers you can not only modify already existing variables, but also create new ones properly. //
+    uint pos = alloc(size); // Here we use function called 'alloc' to create new variable in memory. Notice how we no longer define the type of variable - only its size. //
+    53->pos;                // At this point we can use the new variable using out pointer called pos. //
+    free(pos, size);        // When we no longer need this variable, we delete it using function free, which takes pointer and size of our variable. //
+    // 64->pos; <- WRONG! This pointer no longer points to a valid address, so we can not access it safely! //
+
+    int a = 75;
+    pos = ? @a;
+    // free(pos, size); <- WRONG! You can only free memory that was acquired using alloc function! //
+
+    if (true)
+    {
+        // Below we create two variables: one using normal declaration, and one using pointer. //
+        ulong b = 86;
+        pos = alloc(sizeof(ulong));
+    }
+    // When we exit if, b is automatically deleted, but the one created with alloc is not: //
+    // b = 97; <- WRONG! //
+    ulong(97)->pos; // OK //
+    // This creates a danger of wasting a lot of memory, so remember to free the memory you are no longer using: //
+    free(pos, sizeof(ulong));
+}
+
+// Here this example ends. //

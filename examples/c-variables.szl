@@ -1,0 +1,12 @@
+// This example showcases how to create and use variables. //
+#program "The_Vatrix"
+
+void main()
+{
+    int a = 0; // This line creates variable called 'a', and saves 0 in it. //
+    // int a; <- WRONG! You must fill variable with some default value! //
+    int b = a + 1; // To use value remembered inside the variable, you simply write its name. //
+    // a; <- WRONG! You can not use variable outside of some kind of operation. //
+}
+
+// Here this example ends. //

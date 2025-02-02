@@ -1,0 +1,13 @@
+// This is an example of while loops. //
+#program "Groundhog_Loop"
+
+void main()
+{
+    int a = 0;
+    while (a != 10) // If the condition inside while is met, code between '{' and '}' will be executed multiple times, as long as the condition evaluates to true. //
+    {
+        a = a + 1; // Variable a will be incremented (increased by one) until it reaches 10. Only then the condition will be met, and code after '}' will be executed. //
+    }
+}
+
+// Here this example ends. //

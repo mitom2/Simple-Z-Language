@@ -1,0 +1,12 @@
+// This is an example presenting how to define numbers using various bases. //
+#program "The_Big_Base_Theory"
+
+void main()
+{
+    int binary = 0b00110101;
+    int octal = 065;
+    int decimal = 53;
+    int hexadecimal = 0x35;
+}
+
+// Here this example ends. //

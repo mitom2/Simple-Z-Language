@@ -1,0 +1,12 @@
+// This is an example of I/O operations. //
+#program "The_File_Awakens"
+
+void main()
+{
+    int input = 0;
+    uint device = 0b00010011;
+    input = in(device); // Function 'in' is used to receive data from device that has a specific address, in this case 0b00010011. //
+    out(device, 16);    // Function 'out' is used to send data to device that has a specific address. //
+}
+
+// Here this example ends. //

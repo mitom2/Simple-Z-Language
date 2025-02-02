@@ -1,0 +1,21 @@
+// This is an example of for loops. //
+#program "Lord_of_the_Loops"
+
+void main()
+{
+    int b = 2;
+    int res = 1;
+
+    // For loops are more advanced than while. Inside they contain 3 fields separated with ';'. //
+    // First one is a code that will be executed before the loop begins. //
+    // Second is a condition that works just like the one in while loops. //
+    // Third is a code that will be executed each time the code between '{' an '}' ends. //
+    // So, this loop begins from i = 0. Every time it completes one loop, i is increased by 1. Entire loop ends when i reaches 10. //
+    for (int i = 0; i < 10; i = i + 1)
+    {
+        res = res * b;
+    }
+    // At this point res is equal to 1024, since we multiplied it by two 10 times! //
+}
+
+// Here this example ends. //

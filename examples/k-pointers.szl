@@ -1,0 +1,25 @@
+// This is an example of pointers. //
+#program "Pointy_Eared_Leaf_Lovers"
+
+void main()
+{
+    int res = 0;
+    // Pointers are a way to modify memory of the device directly. //
+    uint pos = 0x7777; // First, we need uint value, which will hold memory address we want to access. Note that this is not a proper way to create new variables. Proper way is discussed in the next example. //
+    int a = 6;
+    a->pos;           // Now we can save some value at that memory location using arrow operator '->' //
+    int b = int @pos; // If we want to read value from memory location, '@' operator can be used. Note how type of value in the memory must be specified. //
+    int c = 4;
+    pos = ? @c; // If we want to get memory address where a variable is stored, '?@' operator is used. //
+    a->pos;
+    if (c == 6)
+    {
+        res = 2; // Since we used pointer to modify variable 'c' indirectly, it is now equal to 6, so res will be set to 2. //
+    }
+    else if (c == 4)
+    {
+        res = 1; // Variable 'c' no longer equals 4! //
+    }
+}
+
+// Here this example ends. //

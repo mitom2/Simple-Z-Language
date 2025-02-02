@@ -1,0 +1,14 @@
+// This is a comment //
+/* This is also a comment */
+// Notice how even comments that begin with double slash must be closed //
+// Otherwise they will
+be considered multi - line too ! //
+/* Comments must be concluded the same way they were opened, so slash and asterisk comments must be closed by asterisk and slash */
+// The same goes for double slash comments //
+
+// Below is an example of preprocessor instructions //
+#program "name_of_the_program"      // Sets name of the program. Can not contain white characters. This directive is required for all programs, but must not be used in libraries! //
+#position "256"                     // Allows to set starting position of the program in memory. This directive is optional, but just like the previous one it is forbidden in libraries. //
+#include "something_to_include.szl" // This directive includes library into your code, allowing you to use it's functions. //
+
+    // Here this example ends. //

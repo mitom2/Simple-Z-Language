@@ -1,0 +1,25 @@
+// This is an example of mathematical and logical operations. //
+#program "The_Shifters_Apprentice"
+
+void main()
+{
+    uint a = uint(6); // 0b110 //
+    uint b = uint(4); // 0b100 //
+    uint res = a + b; // Addition, res = 10 //
+    res = a - b;      // Subtraction, res = 4 //
+    res = a * b;      // Multiplication, res = 24 //
+    res = a / b;      // Division, res = 1 //
+    res = a % b;      // Modulo (division remainder), res = 2 //
+    res = a & b;      // AND, res = 0b100 //
+    res = a | b;      // OR, res = 0b110 //
+    res = a ^ b;      // XOR, res = 0b010 //
+    res = a << b;     // Shift left, res = 0b1100000 //
+    res = a >> b;     // Shift right, res = 0b0 //
+    res = ~a;         // Bitwise negation, res = 0b1111111111111001 //
+
+    // Mathematical order of operations is supported: //
+    res = a + a * b;   // res = 30 //
+    res = (a + a) * b; // res = 48 //
+}
+
+// Here this example ends. //

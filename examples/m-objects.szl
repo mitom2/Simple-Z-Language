@@ -1,0 +1,44 @@
+// This is an example of objects. //
+#program "The_Objectorian"
+
+// Objects are, simply put, a way to create your own variable types. //
+object Car // Here we create a type called 'Car'. //
+{
+    // Objects can hold multiple variables in them. //
+    uint mass;
+    ulong mileage;
+    float fuel;
+}
+
+// Note that objects can only be defined outside of functions and other objects. //
+
+void main()
+{
+    // We can now create a car! //
+    Car warszawa;             // Notice how we do not specify default value. //
+    warszawa.mass = 1360;     // We can now access variables of the object using '.' operator. //
+    warszawa.mileage = 64533; // It recommended to set all member variables as soon as the object is created. //
+    warszawa.fuel = 4.231;
+
+    Car syrena;
+    syrena.mass = 970;
+    syrena.mileage = 32777;
+    syrena.fuel = 4.535;
+
+    Car better;
+    if (warszawa.mileage < syrena.mileage)
+    {
+        better = warszawa;
+    }
+    else
+    {
+        better = syrena;
+    }
+
+    uint pointer = alloc(sizeof(Car));
+    better->pointer;
+    float currentFuel = (Car @pointer).fuel;
+    free(pointer, sizeof(Car));
+}
+
+// Here this example ends. //
