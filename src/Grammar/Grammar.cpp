@@ -3346,21 +3346,20 @@ std::string szl::GrammarSizeOf::execute(std::vector<szl::Token> &program, std::s
     if (program[position].category != szl::TokenCategory::Identifier && program[position].category != szl::TokenCategory::Keyword)
         throw szl::SZLException("Syntax error while calling 'sizeof'", program[position].file, program[position].line);
     auto type = program[position++].content;
-    internalState.push_back("ulong");
+    position++;
+    internalState.push_back("uint");
     if (!szl::objectTypes.count(type))
     {
         if (type == "int" || type == "uint" || type == "char" || type == "bool")
-            return "LD DE,#2\nLD HL,%0\n";
+            return "LD HL,#2\n";
         if (type == "long" || type == "ulong" || type == "float")
-            return "LD DE,#4\nLD HL,%0\n";
+            return "LD HL,#4\n";
         throw szl::SZLException("Type '" + type + "' not recognized", program[position].file, program[position].line);
     }
     auto size = fromDec(std::to_string(szl::objectTypes[type].getSize()));
-    if (size.length() > 32)
-        throw szl::SZLException("Size of object '" + type + "' is too large", program[position].file, program[position].line);
     if (size.length() > 16)
-        return "LD DE,%" + size.substr(size.length() - 16, 16) + "\nLD HL,%" + size.substr(0, size.length() - 16) + "\n";
-    return "LD DE,%" + size + "\nLD HL,%0\n";
+        throw szl::SZLException("Size of object '" + type + "' is too large", program[position].file, program[position].line);
+    return "LD HL,%" + size + "\n";
 }
 
 szl::GrammarSizeOf::GrammarSizeOf(Grammar *root) : szl::Grammar(root) {}
