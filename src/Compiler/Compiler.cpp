@@ -98,6 +98,8 @@ szl::Code szl::preprocessor(szl::Code code)
                     }
                     if (!found)
                         continue;
+                    if (code[i] == ' ' || code[i] == '\n' || code[i] == '\t')
+                        throw szl::SZLException("Program name can not contain white characters", code[i].file, code[i].line);
                     name += code[i];
                 }
                 if (!name.length())
