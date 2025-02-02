@@ -2,6 +2,8 @@
 
 void szl::Code::insert(std::string codeText, std::size_t position, std::string file, std::size_t line)
 {
+    if (!isFileIncluded(file))
+        includedFiles.push_back(std::filesystem::absolute(file));
     for (std::size_t i = 0; i < codeText.size(); i++)
     {
         szl::CodeCharacter newCharacter;
@@ -10,6 +12,25 @@ void szl::Code::insert(std::string codeText, std::size_t position, std::string f
         newCharacter.line = line;
         code.insert(code.begin() + position + i, newCharacter);
     }
+}
+
+void szl::Code::insert(const szl::Code &codeText, std::size_t position)
+{
+    for (std::size_t i = 0; i < codeText.size(); i++)
+    {
+        szl::CodeCharacter newCharacter = codeText[i];
+        code.insert(code.begin() + position + i, newCharacter);
+        if (!isFileIncluded(newCharacter.file))
+            includedFiles.push_back(std::filesystem::absolute(newCharacter.file));
+    }
+}
+
+void szl::Code::insert(const szl::CodeCharacter &codeChar, std::size_t position)
+{
+    szl::CodeCharacter newCharacter = codeChar;
+    code.insert(code.begin() + position, newCharacter);
+    if (!isFileIncluded(newCharacter.file))
+        includedFiles.push_back(std::filesystem::absolute(newCharacter.file));
 }
 
 const szl::CodeCharacter &szl::Code::operator[](std::size_t position) const
@@ -35,6 +56,16 @@ std::string szl::Code::substr(const std::size_t position, const std::size_t leng
         res += code[position + i].contents;
     }
     return res;
+}
+
+bool szl::Code::isFileIncluded(const std::string &file) const
+{
+    for (auto &it : includedFiles)
+    {
+        if (std::filesystem::equivalent(it, file))
+            return true;
+    }
+    return false;
 }
 
 bool szl::CodeCharacter::operator==(const char &ch) const
