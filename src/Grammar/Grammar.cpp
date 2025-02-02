@@ -2336,13 +2336,75 @@ std::string szl::GrammarIf::execute(std::vector<szl::Token> &program, std::size_
         throw szl::SZLException("If statement requires boolean condition", program[position].file, program[position].line);
     internalState.pop_back();
 
+    std::string endId = "@szlCompilerIfStatementAbsEndingId" + std::to_string(szl::nextUniqueId++) + "\n";
     res += "LD DE,%0\nOR A\nSBC HL,DE\nJP Z," + scope.back().getNextLabel() + "\n";
-    scope.emplace_back(0, &res, &scope.back());
-    position++;
-    res += compileScope(program, position, scope, internalState);
-    scope.back().changeCode(&res);
-    scope.pop_back();
-    return res;
+    while (true)
+    {
+        scope.emplace_back(0, &res, &scope.back());
+        position++;
+        res += compileScope(program, position, scope, internalState);
+        scope.back().changeCode(&res);
+        if (program.size() <= position)
+        {
+            scope.pop_back();
+            return res + endId;
+        }
+        if (program[position].category != szl::TokenCategory::Keyword)
+        {
+            scope.pop_back();
+            return res + endId;
+        }
+        if (program[position].content != "else")
+        {
+            scope.pop_back();
+            return res + endId;
+        }
+        scope.back().addCustomDeleteCode("JP " + endId);
+        scope.pop_back();
+        if (program.size() <= position + 1)
+            throw szl::SZLException("Unexpected EOF on else", program[position].file, program[position].line);
+
+        bool conditional = true;
+        if (program[position = position + 1].category != szl::TokenCategory::Keyword)
+            conditional = false;
+        if (program[position].content != "if")
+            conditional = false;
+        if (position + 1 >= program.size())
+            throw szl::SZLException("Unexpected EOF on else", program[position].file, program[position].line);
+        if (conditional)
+        {
+            if (program[++position].category != szl::TokenCategory::Bracket)
+                throw szl::SZLException("Syntax error on else", program[position].file, program[position].line);
+            if (program[position++].content != "(")
+                throw szl::SZLException("Syntax error on else", program[position].file, program[position].line);
+            res += executeSubRules(program, position, scope, internalState);
+            if (!res.length())
+                throw szl::SZLException("If else statement syntax error", program[position].file, program[position].line);
+            if (program[position].category != szl::TokenCategory::Bracket)
+                throw szl::SZLException("If else statement syntax error", program[position].file, program[position].line);
+            if (program[position++].content != ")")
+                throw szl::SZLException("If else statement syntax error", program[position].file, program[position].line);
+            if (position >= program.size())
+                throw szl::SZLException("If else statement syntax error: EOF", program[position].file, program[position].line);
+            if (program[position].category != szl::TokenCategory::Bracket)
+                throw szl::SZLException("If else statement syntax error", program[position].file, program[position].line);
+            if (program[position].content != "{")
+                throw szl::SZLException("If else statement syntax error", program[position].file, program[position].line);
+            if (internalState.size() < 1)
+                throw szl::SZLException("If else statement requires condition", program[position].file, program[position].line);
+            if (internalState.back() != "bool")
+                throw szl::SZLException("If else statement requires boolean condition", program[position].file, program[position].line);
+            internalState.pop_back();
+            res += "LD DE,%0\nOR A\nSBC HL,DE\nJP Z," + scope.back().getNextLabel() + "\n";
+        }
+        else
+        {
+            if (program[position].category != szl::TokenCategory::Bracket)
+                throw szl::SZLException("Else statement syntax error", program[position].file, program[position].line);
+            if (program[position].content != "{")
+                throw szl::SZLException("Else statement syntax error", program[position].file, program[position].line);
+        }
+    }
 }
 
 szl::GrammarIf::GrammarIf(Grammar *root) : szl::Grammar(root) {}

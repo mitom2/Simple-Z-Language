@@ -15,7 +15,7 @@ namespace szl
             "~", "&", "|", "^", "<<", ">>", "!",
             "=",
             "!=", "==", "<", ">", "<=", ">=",
-            "if", "for", "while",
+            "if", "else", "for", "while",
             "int", "uint", "long", "ulong",
             "bool", "float", "char",
             "@", "->", "?",
