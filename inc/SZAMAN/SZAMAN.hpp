@@ -1589,6 +1589,11 @@ namespace szaman
 				}
 				if (opC > 0b111111111111111111111111)
 				{
+					if (bytePos >= bytecode.size())
+					{
+						displayError("Program does not fit inside memory.", "47", code[i].position, code[i].file, showbadcode, buf);
+						break;
+					}
 					if (bytecode[bytePos] != 0)
 					{
 						displayError("Org collision.", "44", code[i].position, code[i].file, showbadcode, buf);
@@ -1598,6 +1603,11 @@ namespace szaman
 				}
 				if (opC > 0b1111111111111111)
 				{
+					if (bytePos >= bytecode.size())
+					{
+						displayError("Program does not fit inside memory.", "47", code[i].position, code[i].file, showbadcode, buf);
+						break;
+					}
 					if (bytecode[bytePos] != 0)
 					{
 						displayError("Org collision.", "44", code[i].position, code[i].file, showbadcode, buf);
@@ -1607,12 +1617,22 @@ namespace szaman
 				}
 				if ((opC > 0b11111111) || (opcodes[code[i].text].second == 254 && opC == 0))
 				{
+					if (bytePos >= bytecode.size())
+					{
+						displayError("Program does not fit inside memory.", "47", code[i].position, code[i].file, showbadcode, buf);
+						break;
+					}
 					if (bytecode[bytePos] != 0)
 					{
 						displayError("Org collision.", "44", code[i].position, code[i].file, showbadcode, buf);
 					}
 					bytecode[bytePos] = (opC >> 8) & 0b11111111;
 					bytePos++;
+				}
+				if (bytePos >= bytecode.size())
+				{
+					displayError("Program does not fit inside memory.", "47", code[i].position, code[i].file, showbadcode, buf);
+					break;
 				}
 				if (bytecode[bytePos] != 0)
 				{
@@ -1646,8 +1666,18 @@ namespace szaman
 			}
 			else
 			{
+				if (it->second + 1 >= bytecode.size())
+				{
+					displayError("Program does not fit inside memory.", "47", it->first, temp, showbadcode, labelTxt);
+					break;
+				}
 				if (bytecode[it->second] != 0)
 				{
+					if (it->second + 2 >= bytecode.size())
+					{
+						displayError("Program does not fit inside memory.", "47", it->first, temp, showbadcode, labelTxt);
+						break;
+					}
 					bytecode[it->second + 1] += labels[labelTxt] & 0b11111111;
 					bytecode[it->second + 2] += labels[labelTxt] >> 8;
 				}
@@ -1664,6 +1694,11 @@ namespace szaman
 			std::size_t offsetMov = 0;
 			for (std::size_t i = 0; i < bytecode.size(); i++)
 			{
+				if (i >= bytecode.size())
+				{
+					displayError("Program does not fit inside memory.", "47", code[i].position, code[i].file, showbadcode, buf);
+					break;
+				}
 				if (bytecode[i] != 0)
 					startMov = true;
 				else
