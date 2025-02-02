@@ -49,15 +49,110 @@ std::vector<szl::Token> szl::tokenize(const szl::Code &code)
     return res;
 }
 
+szl::Code szl::preprocessor(szl::Code code)
+{
+    szl::Code res;
+    for (std::size_t i = 0; i < code.size(); i++)
+    {
+        if (code[i] == '#')
+        {
+            std::string directive = code.substr(i, 8);
+            if (directive == "#include")
+            {
+                i += 8;
+                if (code.size() <= i)
+                    throw szl::SZLException("Unexpected EOF on preprocessor directive #include", code[i].file, code[i].line);
+                std::string path;
+                bool found = false;
+                for (; code[i] != '\n'; i++)
+                {
+                    if (code[i] == '"')
+                    {
+                        if (found)
+                            break;
+                        found = true;
+                        continue;
+                    }
+                    if (!found)
+                        continue;
+                    path += code[i];
+                }
+                if (!code.isFileIncluded(path))
+                    code.insert(loadFile(path), i + 1);
+            }
+            else if (directive == "#program")
+            {
+                i += 8;
+                if (code.size() <= i)
+                    throw szl::SZLException("Unexpected EOF on preprocessor directive #program", code[i].file, code[i].line);
+                std::string name;
+                bool found = false;
+                for (; code[i] != '\n'; i++)
+                {
+                    if (code[i] == '"')
+                    {
+                        if (found)
+                            break;
+                        found = true;
+                        continue;
+                    }
+                    if (!found)
+                        continue;
+                    name += code[i];
+                }
+                if (!name.length())
+                    throw szl::SZLException("Preprocessor directive #program requires identifier at least 1 valid character long", code[i].file, code[i].line);
+                szl::programData["name"] = name;
+            }
+            else if ((directive = code.substr(i, 9)) == "#position")
+            {
+                i += 9;
+                if (code.size() <= i)
+                    throw szl::SZLException("Unexpected EOF on preprocessor directive #position", code[i].file, code[i].line);
+                std::string position;
+                bool found = false;
+                for (; code[i] != '\n'; i++)
+                {
+                    if (code[i] != ' ' && code[i] != '\n')
+                    {
+                        if (found)
+                            break;
+                        found = true;
+                    }
+                    if (!found)
+                        continue;
+                    position += code[i];
+                }
+                if (!position.length())
+                    throw szl::SZLException("Preprocessor directive #position requires non-negative decimal number", code[i].file, code[i].line);
+                for (std::size_t i = 0; i < position.length(); i++)
+                {
+                    if (position[i] < '0' || position[i] > '9')
+                        throw szl::SZLException("Preprocessor directive #position requires non-negative decimal number", code[i].file, code[i].line);
+                }
+                if (std::stol(position) > 0xFFFF)
+                    throw szl::SZLException("Preprocessor directive #position requires number lower than 65536", code[i].file, code[i].line);
+                szl::programData["position"] = position;
+            }
+            else
+                throw szl::SZLException("Preprocessor directive not recognized", code[i].file, code[i].line);
+        }
+        else
+        {
+            res.insert(code[i], res.size());
+        }
+    }
+    return res;
+}
+
 void szl::compile(const std::string &in, const std::string &out)
 {
-    auto program = tokenize(loadFile(in));
+    auto program = tokenize(preprocessor(loadFile(in)));
+    if (!szl::programData.count("name"))
+        throw szl::SZLException("Preprocessor directive #program not found");
+    szl::programData["position"] = szl::programData.count("position") ? szl::programData["position"] : "16384"; // Set HEX 4000 if not specified
     szl::Grammar grammar;
     grammar.initialize();
-    // TODO: set program name using preprocessor
-    szl::programData["name"] = "program";
-    // TODO: determine heap address
-    szl::programData["heap address"] = "$FF00";
     std::string res;
     {
         std::list<szl::Scope> scopes;
@@ -74,20 +169,12 @@ void szl::compile(const std::string &in, const std::string &out)
             throw szl::SZLException("Syntax error");
         }
     }
-    std::string filename = in + ".ia", size = "64k", start = "0", output = out;
+    res = ".include res/stdszllib.ia\n" + res + "\n@szlCompilerHeapPosition\n";
+    std::string filename = in + ".ia", size = "64k", output = out;
     std::ofstream file(filename);
     if (!file.good())
         throw szl::SZLException("Output file access denied");
-    /** std::ifstream stdszllib("res/stdszllib.ia");
-     if (!stdszllib.good())
-         throw szl::SZLException("Standard library not found");
-     std::string line;
-     while (std::getline(stdszllib, line))
-     {
-         file << line + "\n";
-     }
-     stdszllib.close();*/
-    file << ".include res/stdszllib.ia\n" + res;
+    file << res;
     file.close();
-    szaman::run(filename, output, size, start, false, false);
+    szaman::run(filename, output, size, szl::programData["position"], false, false);
 }

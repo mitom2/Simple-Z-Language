@@ -2975,7 +2975,7 @@ std::string szl::GrammarAlloc::execute(std::vector<szl::Token> &program, std::si
         throw szl::SZLException("Syntax error on alloc", program[position].file, program[position].line);
     if (program[position++].content != ")")
         throw szl::SZLException("Syntax error on alloc", program[position].file, program[position].line);
-    return res + "LD DE," + szl::programData["heap address"] + "\nCALL @stdszllib_alloc\n";
+    return res + "LD DE,@szlCompilerHeapPosition\nCALL @stdszllib_alloc\n";
 }
 
 szl::GrammarAlloc::GrammarAlloc(Grammar *root) : szl::Grammar(root) {}

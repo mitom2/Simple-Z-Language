@@ -24,5 +24,7 @@ namespace szl
 
     std::vector<szl::Token> tokenize(const szl::Code &code);
 
+    szl::Code preprocessor(szl::Code code);
+
     void compile(const std::string &in, const std::string &out);
 }
