@@ -4,7 +4,7 @@ szl::Code szl::loadFile(const std::string &path)
 {
     std::ifstream file(path);
     if (!file.good())
-        throw szl::SZLException("Input file not found");
+        throw szl::SZLException("Input file '" + path + "' not found");
     std::string input;
     szl::Code content;
     for (std::size_t line = 0; std::getline(file, input); line++)
@@ -64,7 +64,7 @@ szl::Code szl::preprocessor(szl::Code code)
                     throw szl::SZLException("Unexpected EOF on preprocessor directive #include", code[i].file, code[i].line);
                 std::string path;
                 bool found = false;
-                for (; code[i] != '\n'; i++)
+                for (; i < code.size(); i++)
                 {
                     if (code[i] == '"')
                     {
@@ -87,7 +87,7 @@ szl::Code szl::preprocessor(szl::Code code)
                     throw szl::SZLException("Unexpected EOF on preprocessor directive #program", code[i].file, code[i].line);
                 std::string name;
                 bool found = false;
-                for (; code[i] != '\n'; i++)
+                for (; i < code.size(); i++)
                 {
                     if (code[i] == '"')
                     {
@@ -101,7 +101,7 @@ szl::Code szl::preprocessor(szl::Code code)
                     name += code[i];
                 }
                 if (!name.length())
-                    throw szl::SZLException("Preprocessor directive #program requires identifier at least 1 valid character long", code[i].file, code[i].line);
+                    throw szl::SZLException("Preprocessor directive #program requires string containing identifier at least 1 valid character long", code[i].file, code[i].line);
                 szl::programData["name"] = name;
             }
             else if ((directive = code.substr(i, 9)) == "#position")
@@ -111,27 +111,28 @@ szl::Code szl::preprocessor(szl::Code code)
                     throw szl::SZLException("Unexpected EOF on preprocessor directive #position", code[i].file, code[i].line);
                 std::string position;
                 bool found = false;
-                for (; code[i] != '\n'; i++)
+                for (; i < code.size(); i++)
                 {
-                    if (code[i] != ' ' && code[i] != '\n')
+                    if (code[i] == '"')
                     {
                         if (found)
                             break;
                         found = true;
+                        continue;
                     }
                     if (!found)
                         continue;
                     position += code[i];
                 }
                 if (!position.length())
-                    throw szl::SZLException("Preprocessor directive #position requires non-negative decimal number", code[i].file, code[i].line);
+                    throw szl::SZLException("Preprocessor directive #position requires string containing non-negative decimal number", code[i].file, code[i].line);
                 for (std::size_t i = 0; i < position.length(); i++)
                 {
                     if (position[i] < '0' || position[i] > '9')
-                        throw szl::SZLException("Preprocessor directive #position requires non-negative decimal number", code[i].file, code[i].line);
+                        throw szl::SZLException("Preprocessor directive #position requires string containing non-negative decimal number", code[i].file, code[i].line);
                 }
                 if (std::stol(position) > 0xFFFF)
-                    throw szl::SZLException("Preprocessor directive #position requires number lower than 65536", code[i].file, code[i].line);
+                    throw szl::SZLException("Preprocessor directive #position requires string containing number lower than 65536", code[i].file, code[i].line);
                 szl::programData["position"] = position;
             }
             else
