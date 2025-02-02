@@ -1,0 +1,151 @@
+// LIST CONTAINER LIBRARY //
+
+object ListElement
+{
+    uint next;
+    uint value;
+}
+
+object List
+{
+    uint front;
+    uint back;
+    uint size;
+    uint valuesSz;
+}
+
+List listCreate(uint valuesSize)
+{
+    List res;
+    res.size = 0;
+    res.valuesSz = valuesSize;
+    list.front = 0;
+    list.back = 0;
+    return res;
+}
+
+void listClear(uint list)
+{
+    List l = List @list;
+    uint addr = l.front;
+    while (!addr)
+    {
+        ListElement el = ListElement @addr;
+        free(el.value, list.valuesSize);
+        uint buf = el.next;
+        free(addr, sizeof(ListElement));
+        addr = buf;
+    }
+}
+
+void listPushFront(uint list, uint value)
+{
+    List l = List @list;
+    ListElement el;
+    el.next = l.front;
+    el.value = value;
+    l.front = alloc(sizeof(ListElement));
+    el->l.front;
+    l.size = l.size + 1;
+    l->list;
+}
+
+void listPushBack(uint list, uint value)
+{
+    List l = List @list;
+    ListElement el;
+    el = ListElement @l.back;
+    uint addr = alloc(sizeof(ListElement));
+    el.next = addr;
+    el->l.back;
+    el.value = value;
+    el.next = 0;
+    el->addr;
+    l.size = l.size + 1;
+    l->list;
+}
+
+void listInsert(uint list, uint value, uint position)
+{
+    if (!position)
+    {
+        listPushFront(list, value);
+        return 0;
+    }
+    List l = List @list;
+    uint addr = l.front;
+    while (addr != position)
+    {
+        if (!addr)
+        {
+            listPushBack(list, value);
+            return 0;
+        }
+        ListElement el = ListElement @addr;
+        addr = el.next;
+    }
+    ListElement el = ListElement @addr;
+    uint next = el.next;
+    uint buf = alloc(sizeof(ListElement));
+    el.next = buf;
+    el->addr;
+    el.value = value;
+    el.next = next;
+    el->buf;
+    l.size = l.size + 1;
+    l->list;
+}
+
+void listPopFront(uint list)
+{
+    List l = List @list;
+    uint addr = l.front;
+    if (!addr)
+    {
+        return 0;
+    }
+    ListElement el = ListElement @addr;
+    l.front = el.next;
+    l.size = l.size - 1;
+    l->list;
+    free(el.value, l.valuesSz);
+    free(addr, sizeof(ListElement));
+}
+
+void listRemove(uint list, uint position)
+{
+    List l = List @list;
+    if (l.size == 1)
+    {
+        listPopFront(list);
+        return 0;
+    }
+    else if (!l.front)
+    {
+        return 0;
+    }
+    uint pointer = l.front;
+    ListElement el = ListElement @pointer;
+    while (el.next != position)
+    {
+        if (!el.next)
+        {
+            return 0;
+        }
+        pointer = el.next;
+        el = ListElement @pointer;
+    }
+    uint addr = el.next;
+    ListElement nE = ListElement @addr;
+    el.next = nE.next;
+    free(nE.value, l.valuesSz);
+    free(addr, sizeof(ListElement));
+    el->pointer;
+    l->list;
+}
+
+void listPopBack(uint list)
+{
+    List l = List @list;
+    listRemove(list, l.back);
+}
