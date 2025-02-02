@@ -1729,7 +1729,7 @@ namespace szaman
 
 			if (loadFromFile(in, code) == true)
 			{
-				assemble(code, bytecode, std::stoi(startingPos), showbadcode, beg0);
+				assemble(code, bytecode, sPos, showbadcode, beg0);
 				std::ofstream save(out, std::ios::binary);
 				if (save.good() == false)
 				{
