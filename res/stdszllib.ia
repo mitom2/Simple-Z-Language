@@ -1387,3 +1387,113 @@
     @stdszllibLessLongRet1
     LD HL,%1
     RET
+
+;Allocates memory of given size. Returns address to it.
+@stdszllib_alloc
+    EX DE,HL
+    LD HL,@szlCompilerHeapPosition
+    LD C,(HL)
+    INC HL
+    LD B,(HL)
+    INC HL
+    PUSH BC
+    XOR A
+    @stdszllibAllocRetry
+    LD B,D
+    LD C,E
+    @stdszllibAllocLoop1
+    CP B
+    JP NZ,@stdszllibAllocContinue
+    CP C
+    JP Z,@stdszllibAllocFound
+    @stdszllibAllocContinue
+    CP (HL)
+    INC HL
+    JP NZ,@stdszllibAllocRetry
+    DEC BC
+    JP @stdszllibAllocLoop1
+    @stdszllibAllocFound
+    XOR A
+    PUSH HL
+    SBC HL,@szlCompilerHeapPosition
+    INC HL
+    INC HL
+    EX DE,HL
+    POP HL
+    @stdszllibAllocLoop2
+    LD (HL),%1
+    DEC DE
+    CP D
+    JP NZ,@stdszllibAllocNo0
+    CP E
+    JP Z,@stdszllibAllocCompleted
+    @stdszllibAllocNo0
+    DEC HL
+    JP @stdszllibAllocLoop2
+    @stdszllibAllocCompleted
+    POP BC
+    ADD HL,BC
+    RET
+
+;Frees allocated memory. HL - address, DE - size.
+@stdszllib_free
+    LD B,H
+    LD C,L
+    EXX
+    LD HL,@szlCompilerHeapPosition
+    LD E,(HL)
+    INC HL
+    LD D,(HL)
+    ADD HL,DE
+    PUSH HL
+    EXX
+    POP BC
+    XOR A
+    SBC HL,DE
+    LD B,H
+    LD C,L
+    LD HL,@szlCompilerHeapPosition
+    INC HL
+    INC HL
+    ADD HL,BC
+    @stdszllFreeLoop
+    LD (HL),%0
+    INC HL
+    DEC DE
+    CP D
+    JP NZ,@stdszllFreeLoop
+    CP E
+    RET Z
+    JP @stdszllFreeLoop
+
+;Initializes heap.
+@stdszllib_heap_init
+    LD DE,@szlCompilerHeapPosition
+    LD HL,$FFFF
+    XOR A
+    SBC HL,DE
+    SRL H
+    RR L
+    SRL H
+    RR L
+    LD D,H
+    LD E,L
+    SRL H
+    RR L
+    ADD HL,DE
+    EX DE,HL
+    LD HL,@szlCompilerHeapPosition
+    LD (HL),E
+    INC HL
+    LD (HL),D
+    XOR A
+    @stdszllibHeapInitLoop
+    INC HL
+    CP D
+    JP NZ,@stdszllibHeapInitNo0
+    CP E
+    RET Z
+    @stdszllibHeapInitNo0
+    DEC DE
+    LD (HL),%0
+    JP @stdszllibHeapInitLoop
