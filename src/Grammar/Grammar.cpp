@@ -1799,7 +1799,7 @@ std::string szl::GrammarNotEqual::execute(std::vector<szl::Token> &program, std:
     if (internalState.back() == "float")
     {
         internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_not_equal_float\n";
+        return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_not_equal_32bit\n";
     }
 
     // BOOL
@@ -1882,7 +1882,7 @@ std::string szl::GrammarEqual::execute(std::vector<szl::Token> &program, std::si
     if (internalState.back() == "float")
     {
         internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_equal_float\n";
+        return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_equal_32bit\n";
     }
 
     // BOOL
