@@ -3,8 +3,8 @@
 
 void main()
 {
-    float a = float(12); // To convert variables between types, you should write the desired type, and then in brackets place the original value. //
-    long b = long(a);    // Works with variables too! //
+    uint a = uint(12); // To convert variables between types, you should write the desired type, and then in brackets place the original value. //
+    long b = long(a);  // Works with variables too! //
 
     // Below included are more examples. 'u' before variable type means 'unsigned' (no negative values allowed there): //
     uint c = uint(1);

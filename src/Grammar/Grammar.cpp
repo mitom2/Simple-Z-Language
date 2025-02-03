@@ -15,66 +15,6 @@ std::string szl::Grammar::toBin(uint32_t in)
     return res;
 }
 
-std::string szl::Grammar::toBinFloat(double in, const std::string &file, const std::string &line)
-{
-    std::string rRes;
-    long lPart = static_cast<long>(in);
-    std::string lRes = szl::Grammar::toBin(lPart);
-    double rPart = (in - (double)lPart);
-    for (int prec = 0; (rPart != 0.0) && (prec < 23); prec++)
-    {
-        rPart *= 2.0;
-        if (rPart >= 1.0)
-        {
-            rPart -= 1.0;
-            rRes += "1";
-        }
-        else
-            rRes += "0";
-    }
-    int shift = 0;
-    if (lRes.length() > 1)
-    {
-        shift -= lRes.length() - 1;
-    }
-    else if (lPart == 0)
-    {
-        for (std::size_t i = 0; i < rRes.size(); i++)
-        {
-            if (rRes[i] == '1')
-            {
-                shift = i + 1;
-                break;
-            }
-        }
-    }
-    if (shift < 0)
-    {
-        rRes = lRes.substr(1, lRes.length() - 1) + rRes;
-        lRes = lRes.substr(0, 1);
-    }
-    else if (shift > 0)
-    {
-        lRes = rRes.substr(shift - 1, shift);
-        rRes = rRes.substr(shift, rRes.length() - shift);
-    }
-    shift = 127 - shift;
-    if (shift < 0)
-        throw szl::SZLException("Error on float conversion: exponent too small", file, line);
-    std::string exponent = szl::Grammar::toBin(shift);
-    if (exponent.length() > 8)
-        throw szl::SZLException("Error on float conversion: exponent too big", file, line);
-    while (exponent.length() < 8)
-    {
-        exponent = "0" + exponent;
-    }
-    while (rRes.length() < 23)
-    {
-        rRes += "0";
-    }
-    return "0" + exponent + rRes;
-}
-
 std::string szl::Grammar::fromOct(const std::string &in)
 {
     std::string buf = in.substr(1, in.length() - 1);
@@ -152,11 +92,6 @@ std::string szl::Grammar::fromChar(const std::string &in, const std::string &fil
     return szl::Grammar::toBin(res);
 }
 
-std::string szl::Grammar::fromDecFloat(const std::string &in, const std::string &file, const std::string &line)
-{
-    return szl::Grammar::toBinFloat(std::atof(in.c_str()), file, line);
-}
-
 bool szl::Grammar::isValidNumber(const std::string &in)
 {
     if (in == "0")
@@ -196,30 +131,6 @@ bool szl::Grammar::isValidNumber(const std::string &in)
                 return false;
         }
         else if (ch < '0' || ch > '9')
-            return false;
-    }
-    return true;
-}
-
-bool szl::Grammar::isValidFloatNumber(const std::string &in)
-{
-    if (in == "0")
-        return true;
-    auto sub = in.substr(0, 2);
-    std::string buf = in;
-    if (sub == "0x" || sub == "0b")
-        return false;
-    bool dot = false;
-    for (const auto &ch : in)
-    {
-        if (ch == '.')
-        {
-            if (dot)
-                return false;
-            dot = true;
-            continue;
-        }
-        if (ch < '0' || ch > '9')
             return false;
     }
     return true;
@@ -420,7 +331,7 @@ std::string szl::GrammarSingleVariableDeclaration::execute(std::vector<szl::Toke
     auto type = program[position].content;
     if (program[position + 2].content != "=")
         return "";
-    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "float" && type != "char" && !szl::objectTypes.count(type))
+    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "char" && !szl::objectTypes.count(type))
         return "";
 
     auto newPos = position + 3;
@@ -445,8 +356,8 @@ std::string szl::GrammarSingleVariableDeclaration::execute(std::vector<szl::Toke
         return subRes + "PUSH HL\n";
     }
 
-    // LONG/ULONG/FLOAT - DE contains lower bytes, HL upper ones
-    if (type == "long" || type == "ulong" || type == "float")
+    // LONG/ULONG - DE contains lower bytes, HL upper ones
+    if (type == "long" || type == "ulong")
     {
         scope.back().insertVariable(name, 4, type);
         return subRes + "PUSH DE\nPUSH HL\n";
@@ -538,26 +449,15 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
     auto value2 = program[position + 2].content;
 
     std::string res1, res2;
-    bool floats = false;
     if (!szl::Grammar::isValidNumber(value1))
     {
         if (value1[0] != '\'' && value1[0] != '"')
-        {
-            if (!szl::Grammar::isValidFloatNumber(value1))
-                throw szl::SZLException("Attempting to add malformed values", program[position].file, program[position].line);
-            else
-                floats = true;
-        }
+            throw szl::SZLException("Attempting to add malformed values", program[position].file, program[position].line);
     }
     if (!szl::Grammar::isValidNumber(value2))
     {
         if (value2[0] != '\'' && value2[0] != '"')
-        {
-            if (!szl::Grammar::isValidFloatNumber(value2))
-                throw szl::SZLException("Attempting to add malformed values", program[position].file, program[position].line);
-            else
-                floats = true;
-        }
+            throw szl::SZLException("Attempting to add malformed values", program[position].file, program[position].line);
     }
     position += 3;
     int size = 0; // For string addition only
@@ -577,7 +477,7 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
             res1 += "LD HL,%" + szl::Grammar::fromChar("'" + value1.substr(i, 1) + "'", program[position].file, program[position].line) + "\nPUSH HL\n";
         }
     }
-    else if (!floats)
+    else
     {
         if (value1.length() == 1)
         {
@@ -623,7 +523,7 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
         internalState.push_back("string");
         return "LD HL,%0\nPUSH HL\n" + res1 + res2 + "LD HL,%0\nPUSH HL\nLD HL,SP\n";
     }
-    else if (!floats)
+    else
     {
         if (value2.length() == 1)
         {
@@ -640,14 +540,6 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
             else
                 res2 = szl::Grammar::fromDec(value2);
         }
-    }
-    else
-    {
-        res2 = value2;
-        std::string addRes = szl::Grammar::fromDecFloat(std::to_string(std::atof(res1.c_str()) + std::atof(res2.c_str())), program[position].file, program[position].line);
-        internalState.push_back("float");
-        return "LD HL,%" +
-               addRes.substr(0, 16) + "\nLD DE,%" + addRes.substr(16, 16) + "\n";
     }
     std::string partial = szl::Grammar::binaryAdd(res1, res2);
     if (partial.length() > 32)
@@ -817,13 +709,6 @@ std::string szl::GrammarLiteral::execute(std::vector<szl::Token> &program, std::
         position++;
         return "LD HL,%" + szl::Grammar::fromChar(value, program[position].file, program[position].line) + "\n";
     }
-    if (szl::Grammar::isValidFloatNumber(value))
-    {
-        internalState.push_back("float");
-        position++;
-        auto res = szl::Grammar::fromDecFloat(value, program[position].file, program[position].line);
-        return "LD DE,%" + res.substr(16, 16) + "\nLD HL,%" + res.substr(0, 16) + "\n";
-    }
     if (value == "true" || value == "false")
     {
         internalState.push_back("bool");
@@ -894,12 +779,6 @@ std::string szl::GrammarAddition::execute(std::vector<szl::Token> &program, std:
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_add_32bit\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        return resL + "PUSH HL\nPUSH DE\n" + res + "POP IX\nPOP BC\nXOR A\nCALL @stdszllib_add_sub_floats\n";
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -964,12 +843,6 @@ std::string szl::GrammarSubtraction::execute(std::vector<szl::Token> &program, s
     if (internalState.back() == "long" || internalState.back() == "ulong")
     {
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_subtract_32bit\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        return resL + "PUSH HL\nPUSH DE\n" + res + "POP IX\nPOP BC\nLD A,%1\nCALL @stdszllib_add_sub_floats\n";
     }
 
     // BOOL
@@ -1051,12 +924,6 @@ std::string szl::GrammarMultiplication::execute(std::vector<szl::Token> &program
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_multiply_long\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        // TODO
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -1131,12 +998,6 @@ std::string szl::GrammarDivision::execute(std::vector<szl::Token> &program, std:
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_divide_long\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        // TODO
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -1198,12 +1059,6 @@ std::string szl::GrammarAnd::execute(std::vector<szl::Token> &program, std::size
     if (internalState.back() == "long" || internalState.back() == "ulong")
     {
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_and_32bit\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of AND", program[position].file, program[position].line);
     }
 
     // BOOL
@@ -1282,12 +1137,6 @@ std::string szl::GrammarOr::execute(std::vector<szl::Token> &program, std::size_
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_or_32bit\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of OR", program[position].file, program[position].line);
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -1364,12 +1213,6 @@ std::string szl::GrammarXor::execute(std::vector<szl::Token> &program, std::size
     if (internalState.back() == "long" || internalState.back() == "ulong")
     {
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_xor_32bit\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of XOR", program[position].file, program[position].line);
     }
 
     // BOOL
@@ -1461,12 +1304,6 @@ std::string szl::GrammarModulo::execute(std::vector<szl::Token> &program, std::s
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_divide_long\nLD H,B\nLD L,C\nEXX\nLD A,B\nEXX\nLD D,A\nEXX\nLD A,C\nEXX\nLD E,A\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of modulo", program[position].file, program[position].line);
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -1524,12 +1361,6 @@ std::string szl::GrammarNot::execute(std::vector<szl::Token> &program, std::size
         return res + "CALL @stdszllib_not_32bit\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of NOT", program[position].file, program[position].line);
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -1579,12 +1410,6 @@ std::string szl::GrammarNegation::execute(std::vector<szl::Token> &program, std:
     {
         internalState.back() = "bool";
         return res + "CALL @stdszllib_negation_32bit\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of negation", program[position].file, program[position].line);
     }
 
     // BOOL
@@ -1642,12 +1467,6 @@ std::string szl::GrammarShiftLeft::execute(std::vector<szl::Token> &program, std
     if (internalState.back() == "long" || internalState.back() == "ulong")
     {
         return resL + "PUSH HL\nPUSH DE\n" + res + "LD B,H\nLD C,L\nPOP DE\nPOP HL\nCALL @stdszllib_left_shift_32bit\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of left shift", program[position].file, program[position].line);
     }
 
     // BOOL
@@ -1718,12 +1537,6 @@ std::string szl::GrammarShiftRight::execute(std::vector<szl::Token> &program, st
         return resL + "PUSH HL\nPUSH DE\n" + res + "LD B,H\nLD C,L\nPOP DE\nPOP HL\nCALL @stdszllib_right_shift_32bit\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        throw szl::SZLException("Floats can not be arguments of right shift", program[position].file, program[position].line);
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -1790,13 +1603,6 @@ std::string szl::GrammarNotEqual::execute(std::vector<szl::Token> &program, std:
 
     //  LONG/ULONG
     if (internalState.back() == "long" || internalState.back() == "ulong")
-    {
-        internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_not_equal_32bit\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
     {
         internalState.back() = "bool";
         return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_not_equal_32bit\n";
@@ -1873,13 +1679,6 @@ std::string szl::GrammarEqual::execute(std::vector<szl::Token> &program, std::si
 
     //  LONG/ULONG
     if (internalState.back() == "long" || internalState.back() == "ulong")
-    {
-        internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_equal_32bit\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
     {
         internalState.back() = "bool";
         return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nCALL @stdszllib_equal_32bit\n";
@@ -1976,13 +1775,6 @@ std::string szl::GrammarGreater::execute(std::vector<szl::Token> &program, std::
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_long\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_float\n"; // TODO
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -2067,13 +1859,6 @@ std::string szl::GrammarLess::execute(std::vector<szl::Token> &program, std::siz
     {
         internalState.back() = "bool";
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_long\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_float\n"; // TODO
     }
 
     // BOOL
@@ -2164,13 +1949,6 @@ std::string szl::GrammarGreaterOrEqual::execute(std::vector<szl::Token> &program
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_or_equal_long\n";
     }
 
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_or_equal_float\n"; // TODO
-    }
-
     // BOOL
     if (internalState.back() == "bool")
     {
@@ -2256,13 +2034,6 @@ std::string szl::GrammarLessOrEqual::execute(std::vector<szl::Token> &program, s
     {
         internalState.back() = "bool";
         return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_or_equal_long\n";
-    }
-
-    // FLOAT
-    if (internalState.back() == "float")
-    {
-        internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_or_equal_float\n"; // TODO
     }
 
     // BOOL
@@ -2599,7 +2370,7 @@ szl::Function szl::GrammarFunctionDeclaration::createFunctionTableEntry(std::vec
             throw szl::SZLException("Unexpected EOF while declaring new function", program[position].file, program[position].line);
         if (program[position].category != szl::TokenCategory::Identifier)
             throw szl::SZLException("Syntax error while declaring new function", program[position].file, program[position].line);
-        if (type != "int" && type != "uint" && type != "char" && type != "bool" && type != "long" && type != "ulong" && type != "float" && type != "void" && !szl::objectTypes.count(type))
+        if (type != "int" && type != "uint" && type != "char" && type != "bool" && type != "long" && type != "ulong" && type != "void" && !szl::objectTypes.count(type))
             throw szl::SZLException("Argument type unrecognized while declaring new function", program[position].file, program[position].line);
         arguments.push_back({type, program[position++].content});
         if (position >= program.size())
@@ -2640,7 +2411,7 @@ std::string szl::GrammarFunctionDeclaration::execute(std::vector<szl::Token> &pr
         return "";
 
     auto type = program[position].content;
-    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "float" && type != "char" && type != "void" && !szl::objectTypes.count(type))
+    if (type != "int" && type != "uint" && type != "long" && type != "ulong" && type != "bool" && type != "char" && type != "void" && !szl::objectTypes.count(type))
         return "";
     if (program[position + 2].content != "(")
         return "";
@@ -2653,7 +2424,7 @@ std::string szl::GrammarFunctionDeclaration::execute(std::vector<szl::Token> &pr
 
     if (type == "int" || type == "uint" || type == "char" || type == "bool")
         retSize = 2;
-    else if (type == "long" || type == "ulong" || type == "float")
+    else if (type == "long" || type == "ulong")
         retSize = 4;
     else if (type == "void")
         retSize = 0;
@@ -2673,7 +2444,7 @@ std::string szl::GrammarFunctionDeclaration::execute(std::vector<szl::Token> &pr
         {
             sz = 2;
         }
-        else if (t == "long" || t == "ulong" || t == "float")
+        else if (t == "long" || t == "ulong")
         {
             sz = 4;
         }
@@ -2759,7 +2530,7 @@ std::string szl::GrammarFunctionCall::execute(std::vector<szl::Token> &program, 
             throw szl::SZLException("Argument mismatch inside function call: expected '" + type + "', got '" + internalState.back() + "' instead", program[position].file, program[position].line);
         if (type == "int" || type == "uint" || type == "char" || type == "bool")
             subRes += "PUSH HL\n";
-        else if (type == "long" || type == "ulong" || type == "float")
+        else if (type == "long" || type == "ulong")
             subRes += "PUSH HL\nPUSH DE\n";
         else if (!szl::objectTypes.count(type))
             throw szl::SZLException("Argument type in function call defined as '" + type + "', but this type is not known", program[position].file, program[position].line);
@@ -2916,12 +2687,6 @@ std::string szl::GrammarAt::execute(std::vector<szl::Token> &program, std::size_
         return res + "LD E,(HL)\nDEC HL\nLD D,(HL)\nEX DE,HL\n";
     }
 
-    //  ULONG/LONG/FLOAT
-    if (internalState.back() == "ulong" || internalState.back() == "long" || internalState.back() == "float")
-    {
-        return res + "LD E,(HL)\nDEC HL\nLD D,(HL)\nDEC HL\nLD C,(HL)\nDEC HL\nLD H,(HL)\nLD L,C\n";
-    }
-
     // OBJECT
     if (szl::objectTypes.count(internalState.back()))
     {
@@ -2960,12 +2725,6 @@ std::string szl::GrammarArrow::execute(std::vector<szl::Token> &program, std::si
     if (internalState.back() == "int" || internalState.back() == "uint" || internalState.back() == "char" || internalState.back() == "bool")
     {
         return resL + "PUSH HL\n" + res + "POP DE\nLD (HL),E\nDEC HL\nLD (HL),D\n";
-    }
-
-    //  ULONG/LONG/FLOAT
-    if (internalState.back() == "ulong" || internalState.back() == "long" || internalState.back() == "float")
-    {
-        return resL + "PUSH HL\nPUSH DE\n" + res + "POP DE\nLD (HL),E\nDEC HL\nLD (HL),D\nPOP DE\nDEC HL\nLD (HL),E\nDEC HL\nLD (HL),D\n";
     }
 
     // OBJECT
@@ -3110,7 +2869,7 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
     if (program[newPos].category != szl::TokenCategory::Keyword)
         return "";
     auto type = program[newPos++].content;
-    if (type != "int" && type != "uint" && type != "char" && type != "long" && type != "ulong" && type != "float")
+    if (type != "int" && type != "uint" && type != "char" && type != "long" && type != "ulong")
         return "";
     if (program.size() <= newPos)
         return "";
@@ -3125,8 +2884,8 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
         throw szl::SZLException("Conversion to " + type + " expects one parameter", program[position].file, program[position].line);
     if (internalState.size() < 1)
         throw szl::SZLException("Conversion to " + type + " expects one parameter", program[position].file, program[position].line);
-    if (internalState.back() != "int" && internalState.back() != "uint" && internalState.back() != "char" && internalState.back() != "long" && internalState.back() != "ulong" && internalState.back() != "float")
-        throw szl::SZLException("Conversion to " + type + " expects one parameter of type int, uint, char, long, ulong or float", program[position].file, program[position].line);
+    if (internalState.back() != "int" && internalState.back() != "uint" && internalState.back() != "char" && internalState.back() != "long" && internalState.back() != "ulong")
+        throw szl::SZLException("Conversion to " + type + " expects one parameter of type int, uint, char, long, or ulong", program[position].file, program[position].line);
     if (program.size() <= position)
         throw szl::SZLException("Unexpected EOF when converting " + internalState.back() + " to " + type, program[position].file, program[position].line);
     if (program[position].category != szl::TokenCategory::Bracket)
@@ -3136,48 +2895,29 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
     internalState.back() = type;
     if (internalState.back() == type)
         return res;
-    if (internalState.back() == "float") // TODO
+    if (internalState.back() == "long")
     {
-        if (type == "long")
-            return res + "CALL @stdszllib_conversion_float_to_long\n";
-        if (type == "ulong")
-            return res + "CALL @stdszllib_conversion_float_to_ulong\n";
-        if (type == "int")
-            return res + "CALL @stdszllib_conversion_float_to_int\n";
-        if (type == "uint" || type == "char")
-            return res + "CALL @stdszllib_conversion_float_to_uint\n";
-    }
-    else if (internalState.back() == "long") // TODO
-    {
-        if (type == "float")
-            return res + "CALL @stdszllib_conversion_long_to_float\n";
         if (type == "ulong")
             return res;
         if (type == "int" || type == "uint" || type == "char")
             return res + "EX DE,HL\n";
     }
-    else if (internalState.back() == "ulong") // TODO
+    else if (internalState.back() == "ulong")
     {
-        if (type == "float")
-            return res + "CALL @stdszllib_conversion_ulong_to_float\n";
         if (type == "long")
             return res;
         if (type == "int" || type == "uint" || type == "char")
             return res + "EX DE,HL\n";
     }
-    else if (internalState.back() == "int") // TODO
+    else if (internalState.back() == "int")
     {
-        if (type == "float")
-            return res + "CALL @stdszllib_conversion_int_to_float\n";
         if (type == "long" || type == "ulong")
             return res + "EX DE,HL\nLD HL,%0\n";
         if (type == "uint" || type == "char")
             return res;
     }
-    else if (internalState.back() == "uint" || internalState.back() == "char") // TODO
+    else if (internalState.back() == "uint" || internalState.back() == "char")
     {
-        if (type == "float")
-            return res + "CALL @stdszllib_conversion_uint_to_float\n";
         if (type == "long" || type == "ulong")
             return res + "EX DE,HL\nLD HL,%0\n";
         if (type == "int")
@@ -3223,7 +2963,7 @@ std::string szl::GrammarGetMemberField::execute(std::vector<szl::Token> &program
     {
         if (member == "int" || member == "uint" || member == "char" || member == "bool")
             return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD D,(HL)\nDEC HL\nLD E,(HL)\nEX DE,HL\n";
-        if (member == "long" || member == "ulong" || member == "float")
+        if (member == "long" || member == "ulong")
             return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD B,(HL)\nDEC HL\nLD C,(HL)\nDEC HL\nLD D,(HL)\nDEC HL\nLD E,(HL)\nLD H,B\nLD L,C\n";
         throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
     }
@@ -3280,7 +3020,7 @@ std::string szl::GrammarSetMemberField::execute(std::vector<szl::Token> &program
     {
         if (member == "int" || member == "uint" || member == "char" || member == "bool")
             return res + "EX DE,HL\nLD HL,#" + pos + "\nLD (HL),D\nDEC HL\nLD (HL),E\n";
-        if (member == "long" || member == "ulong" || member == "float")
+        if (member == "long" || member == "ulong")
             return res + "LD B,H\nLD C,L\nLD HL,#" + pos + "\nLD (HL),B\nDEC HL\nLD (HL),C\nDEC HL\nLD (HL),D\nDEC HL\nLD (HL),E\n";
         throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
     }
@@ -3338,12 +3078,12 @@ std::string szl::GrammarObjectDeclaration::execute(std::vector<szl::Token> &prog
             throw szl::SZLException("Syntax error while declaring member field of object", program[position].file, program[position].line);
         if (!szl::objectTypes.count(type))
         {
-            if (type != "int" && type != "uint" && type != "char" && type != "bool" && type != "long" && type != "ulong" && type != "float")
+            if (type != "int" && type != "uint" && type != "char" && type != "bool" && type != "long" && type != "ulong")
                 throw szl::SZLException("Member field type '" + type + "' not recognized", program[position].file, program[position].line);
             int size = 0;
             if (type == "int" || type == "uint" || type == "char" || type == "bool")
                 size = 2;
-            else if (type == "long" || type == "ulong" || type == "float")
+            else if (type == "long" || type == "ulong")
                 size = 4;
             szl::objectTypes[name].getContents().emplace(memberName, type);
             szl::objectTypes[name].getVariables().push_back({memberName, szl::Variable(offset, size, type)});
@@ -3441,7 +3181,7 @@ std::string szl::GrammarSizeOf::execute(std::vector<szl::Token> &program, std::s
     {
         if (type == "int" || type == "uint" || type == "char" || type == "bool")
             return "LD HL,#2\n";
-        if (type == "long" || type == "ulong" || type == "float")
+        if (type == "long" || type == "ulong")
             return "LD HL,#4\n";
         throw szl::SZLException("Type '" + type + "' not recognized", program[position].file, program[position].line);
     }

@@ -1,0 +1,120 @@
+// FLOATING POINT NUMBERS LIBRARY //
+#include "res/pow.szl"
+
+object Float
+{
+    int exponent;
+    long mantissa;
+}
+
+Float floatCreate(int integerPart, uint fractionalPart)
+{
+    bool positive = integerPart >= 0;
+    if (!positive)
+    {
+        integerPart = 0 - integerPart;
+    }
+    long offset = long(1);
+    uint fractionalLength = uint(0);
+    while (buf != uint(0))
+    {
+        offset = offset * long(10);
+        fractionalLength = fractionalLength + uint(1);
+        buf = buf / uint(10);
+    }
+    Float res;
+    res.mantissa = long(integerPart) * offset + long(fractionalPart);
+    if (!positive)
+    {
+        res.mantissa = long(0) - res.mantissa;
+    }
+    res.exponent = int(0) - fractionalLength;
+    return res;
+}
+
+Float floatAddition(Float lhs, Float rhs)
+{
+    int offset = lhs.exponent - rhs.exponent;
+    if (offset > 0)
+    {
+        rhs.mantissa = rhs.mantissa * pow(long(10), offset);
+    }
+    else if (offset < 0)
+    {
+        lhs.mantissa = lhs.mantissa * pow(long(10), 0 - offset);
+        lhs.exponent = rhs.exponent;
+    }
+    lhs.mantissa = lhs.mantissa + rhs.mantissa;
+    while (!lhs.mantissa % long(10))
+    {
+        lhs.mantissa = lhs.mantissa / long(10);
+        lhs.exponent = lhs.exponent + 1;
+    }
+    return lhs;
+}
+
+Float floatSubtraction(Float lhs, Float rhs)
+{
+    int offset = lhs.exponent - rhs.exponent;
+    if (offset > 0)
+    {
+        rhs.mantissa = rhs.mantissa * pow(long(10), offset);
+    }
+    else if (offset < 0)
+    {
+        lhs.mantissa = lhs.mantissa * pow(long(10), 0 - offset);
+        lhs.exponent = rhs.exponent;
+    }
+    lhs.mantissa = lhs.mantissa - rhs.mantissa;
+    while (!lhs.mantissa % long(10))
+    {
+        lhs.mantissa = lhs.mantissa / long(10);
+        lhs.exponent = lhs.exponent + 1;
+    }
+    return lhs;
+}
+
+Float floatAddition(Float lhs, Float rhs)
+{
+    int offset = lhs.exponent - rhs.exponent;
+    if (offset > 0)
+    {
+        rhs.mantissa = rhs.mantissa * pow(long(10), offset);
+    }
+    else if (offset < 0)
+    {
+        lhs.mantissa = lhs.mantissa * pow(long(10), 0 - offset);
+        lhs.exponent = rhs.exponent;
+    }
+    lhs.mantissa = lhs.mantissa + rhs.mantissa;
+    while (!lhs.mantissa % long(10))
+    {
+        lhs.mantissa = lhs.mantissa / long(10);
+        lhs.exponent = lhs.exponent + 1;
+    }
+    return lhs;
+}
+
+Float floatMultiplication(Float lhs, Float rhs)
+{
+    lhs.mantissa = lhs.mantissa * rhs.mantissa;
+    lhs.exponent = lhs.exponent + rhs.exponent;
+    while (!lhs.mantissa % long(10))
+    {
+        lhs.mantissa = lhs.mantissa / long(10);
+        lhs.exponent = lhs.exponent + 1;
+    }
+    return lhs;
+}
+
+Float floatDivision(Float lhs, Float rhs)
+{
+    lhs.mantissa = lhs.mantissa / rhs.mantissa;
+    lhs.exponent = lhs.exponent - rhs.exponent;
+    while (!lhs.mantissa % long(10))
+    {
+        lhs.mantissa = lhs.mantissa / long(10);
+        lhs.exponent = lhs.exponent + 1;
+    }
+    return lhs;
+}

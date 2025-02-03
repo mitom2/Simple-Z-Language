@@ -18,7 +18,7 @@ object Car
 {
     uint mass;
     ulong mileage;
-    float fuel;
+    uint fuel;
 }
 ```
 ### Functions

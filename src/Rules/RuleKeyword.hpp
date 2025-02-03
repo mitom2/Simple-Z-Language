@@ -17,7 +17,7 @@ namespace szl
             "!=", "==", "<", ">", "<=", ">=",
             "if", "else", "for", "while",
             "int", "uint", "long", "ulong",
-            "bool", "float", "char",
+            "bool", "char",
             "@", "->", "?",
             "alloc", "free", "memcpy",
             "object",

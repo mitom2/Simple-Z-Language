@@ -7,7 +7,7 @@ object Car // Here we create a type called 'Car'. //
     // Objects can hold multiple variables in them. //
     uint mass;
     ulong mileage;
-    float fuel;
+    uint fuel;
 }
 
 // Note that objects can only be defined outside of functions and other objects. //
@@ -18,12 +18,12 @@ void main()
     Car warszawa;             // Notice how we do not specify default value. //
     warszawa.mass = 1360;     // We can now access variables of the object using '.' operator. //
     warszawa.mileage = 64533; // It recommended to set all member variables as soon as the object is created. //
-    warszawa.fuel = 4.231;
+    warszawa.fuel = 4;
 
     Car syrena;
     syrena.mass = 970;
     syrena.mileage = 32777;
-    syrena.fuel = 4.535;
+    syrena.fuel = 5;
 
     Car better;
     if (warszawa.mileage < syrena.mileage)
@@ -37,7 +37,7 @@ void main()
 
     uint pointer = alloc(sizeof(Car));
     better->pointer;
-    float currentFuel = (Car @pointer).fuel;
+    uint currentFuel = (Car @pointer).fuel;
     free(pointer, sizeof(Car));
 }
 

@@ -9,7 +9,7 @@ int szl::Object::getSize() const
         auto type = it.second.getType();
         if (type == "int" || type == "uint" || type == "char" || type == "bool")
             res += 2;
-        else if (type == "long" || type == "ulong" || type == "float")
+        else if (type == "long" || type == "ulong")
             res += 4;
         else
         {

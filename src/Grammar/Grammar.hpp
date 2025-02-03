@@ -19,8 +19,6 @@ namespace szl
     {
         static std::string toBin(uint32_t in);
 
-        static std::string toBinFloat(double in, const std::string &file, const std::string &line);
-
         std::unordered_map<std::string, Grammar *> grammars;
 
     protected:
@@ -34,11 +32,7 @@ namespace szl
 
         static std::string fromChar(const std::string &in, const std::string &file, const std::string &line);
 
-        static std::string fromDecFloat(const std::string &in, const std::string &file, const std::string &line);
-
         static bool isValidNumber(const std::string &in);
-
-        static bool isValidFloatNumber(const std::string &in);
 
         std::vector<Grammar *> subRules;
 

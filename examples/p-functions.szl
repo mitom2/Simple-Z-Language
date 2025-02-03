@@ -34,7 +34,7 @@ object Car
 {
     uint mass;
     ulong mileage;
-    float fuel;
+    uint fuel;
 }
 
 Car modifyCar(Car c) // We can use objects too! //
@@ -54,7 +54,7 @@ uint createCar()
     Car warszawa;
     warszawa.mass = 1360;
     warszawa.mileage = 64533;
-    warszawa.fuel = 4.231;
+    warszawa.fuel = 4;
     uint car = alloc(sizeof(Car)); // Here we allocate a new car in memory... //
     warszawa->car;                 // ... which we then make a copy of. //
     return car;                    // Now, since pointers are not deleted when function concludes, we can return car without worrying that it will be deleted. //
@@ -75,7 +75,7 @@ void main()
     Car syrena;
     syrena.mass = 970;
     syrena.mileage = 32777;
-    syrena.fuel = 4.535;
+    syrena.fuel = 5;
     Car betterSyrena;
     betterSyrena = modifyCar(syrena);
 
