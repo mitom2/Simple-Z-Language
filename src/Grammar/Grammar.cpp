@@ -317,6 +317,7 @@ void szl::Grammar::initialize()
     addSubRule("out");
     addSubRule("function call");
     addSubRule("arrow");
+    addSubRule("memcpy");
     addSubRule("free");
     addSubRule("if");
     addSubRule("while");
@@ -394,6 +395,7 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("object creation", new szl::GrammarObjectCreation(this));
     grammars.emplace("sizeof", new szl::GrammarSizeOf(this));
     grammars.emplace("chained operations", new szl::GrammarChainedOperations(this));
+    grammars.emplace("memcpy", new szl::GrammarMemcpy(this));
 }
 
 szl::Grammar::~Grammar()
@@ -3476,4 +3478,78 @@ void szl::GrammarChainedOperations::initialize()
     addSubRule("not");
     addSubRule("identifier");
     addSubRule("literal");
+}
+
+std::string szl::GrammarMemcpy::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+
+    auto newPos = position;
+    std::string res, resL, resR;
+    if (program[newPos].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[newPos].content != "memcpy")
+        return "";
+    if (++newPos >= program.size())
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Bracket)
+        return "";
+    if (program[newPos].content != "(")
+        return "";
+    if (++newPos >= program.size())
+        throw szl::SZLException("Unexpected EOF on memcpy", program[position].file, program[position].line);
+    resL = executeSubRules(program, position = newPos, scope, internalState);
+    if (!resL.length())
+        throw szl::SZLException("Memcpy expects three parameters", program[position].file, program[position].line);
+    if (internalState.size() < 1)
+        throw szl::SZLException("Memcpy expects three parameters", program[position].file, program[position].line);
+    if (internalState.back() != "uint")
+        throw szl::SZLException("Memcpy expects three uint parameters", program[position].file, program[position].line);
+
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF on memcpy", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error on memcpy", program[position].file, program[position].line);
+    if (program[position].content != ",")
+        throw szl::SZLException("Syntax error on memcpy", program[position].file, program[position].line);
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF on memcpy", program[position].file, program[position].line);
+    res = executeSubRules(program, position, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("Memcpy expects three parameters", program[position].file, program[position].line);
+    if (internalState.size() < 2)
+        throw szl::SZLException("Memcpy expects three parameters", program[position].file, program[position].line);
+    if (internalState.back() != "uint")
+        throw szl::SZLException("Memcpy expects three uint parameters", program[position].file, program[position].line);
+
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF on memcpy", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error on memcpy", program[position].file, program[position].line);
+    if (program[position].content != ",")
+        throw szl::SZLException("Syntax error on memcpy", program[position].file, program[position].line);
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF on memcpy", program[position].file, program[position].line);
+    resR = executeSubRules(program, position, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("Memcpy expects three parameters", program[position].file, program[position].line);
+    if (internalState.size() < 3)
+        throw szl::SZLException("Memcpy expects three parameters", program[position].file, program[position].line);
+    if (internalState.back() != "uint")
+        throw szl::SZLException("Memcpy expects three uint parameters", program[position].file, program[position].line);
+
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Syntax error on memcpy", program[position].file, program[position].line);
+    if (program[position++].content != ")")
+        throw szl::SZLException("Syntax error on memcpy", program[position].file, program[position].line);
+    internalState.pop_back();
+    internalState.pop_back();
+    internalState.pop_back();
+    return resL + "PUSH HL\n" + res + "PUSH HL\n" + resR + "LD B,H\nLD C,L\nPOP DE\nPOP HL\nLDIR\n";
+}
+
+szl::GrammarMemcpy::GrammarMemcpy(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarMemcpy::initialize()
+{
+    addSubRule("chained operations");
 }

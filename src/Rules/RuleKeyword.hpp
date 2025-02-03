@@ -19,7 +19,7 @@ namespace szl
             "int", "uint", "long", "ulong",
             "bool", "float", "char",
             "@", "->", "?",
-            "alloc", "free",
+            "alloc", "free", "memcpy",
             "object",
             "void",
             "in", "out",
