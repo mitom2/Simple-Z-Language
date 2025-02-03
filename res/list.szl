@@ -149,3 +149,8 @@ void listPopBack(uint list)
     List l = List @list;
     listRemove(list, l.back);
 }
+
+ListElement listNextElement(ListElement currentElement)
+{
+    return ListElement @currentElement.next;
+}
