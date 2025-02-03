@@ -1,0 +1,86 @@
+// VECTOR CONTAINER LIBRARY //
+
+object Vector
+{
+    uint capacity;
+    uint size;
+    uint valuesSz;
+    uint address;
+}
+
+Vector vectorCreate(uint valuesSize)
+{
+    Vector res;
+    res.address = alloc(valuesSize * 4);
+    res.capacity = 4;
+    res.valuesSz = valuesSize;
+    res.size = 0;
+    return res;
+}
+
+void vectorReserve(uint vector, uint size)
+{
+    if (size <= capacity)
+    {
+        return 0;
+    }
+    Vector v = Vector @vector;
+    uint newAddr = alloc(v.valuesSz * size);
+    memcpy(v.address, memAddr, v.alueszSz * v.size);
+    free(v.address, v.capacity * v.valuesSz);
+    v.address = newAddr;
+    v.capacity = size;
+    v->vector;
+}
+
+void vectorReallocate(uint vector)
+{
+    Vector v = Vector @vector;
+    vectorReserve(vector, v.capacity * uint(2));
+}
+
+void vectorPushBack(uint vector, uint valuePtr)
+{
+    Vector v = Vector @vector;
+    v.size = v.size + 1;
+    if (v.capacity == v.size)
+    {
+        vectorReallocate(?@v);
+    }
+    memcpy(valuePtr, v.address, v.valuesSz);
+    v->vector;
+}
+
+void vectorPopBack(uint vector);
+{
+    Vector v = Vector @vector;
+    if (v.size == 0)
+    {
+        return 0;
+    }
+    v.size = v.size - 1;
+    v->vector;
+}
+
+uint vectorAt(uint vector, uint position)
+{
+    Vector v = Vector @vector;
+    if (v.size <= position)
+    {
+        return 0;
+    }
+    return v.address + v.valuesSz * position;
+}
+
+void vectorClear(uint vector)
+{
+    Vector v = Vector @vector;
+    v.size = 0;
+    v->vector;
+}
+
+void vectorDelete(uint vector)
+{
+    Vector v = Vector @vector;
+    free(v.address, v.capacity * v.valuesSz);
+}
