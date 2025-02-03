@@ -495,10 +495,6 @@ std::string szl::GrammarTwoLiteralsAddition::execute(std::vector<szl::Token> &pr
                 res1 = szl::Grammar::fromDec(value1);
         }
     }
-    else
-    {
-        res1 = value1;
-    }
     if (value2[0] == '\'')
     {
         res2 = szl::Grammar::fromChar(value1, program[position].file, program[position].line);

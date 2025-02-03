@@ -7,6 +7,7 @@
 namespace szl
 {
     class Function;
+    class Object;
     extern std::unordered_map<std::string, szl::Function> functions;
     extern std::unordered_map<std::string, std::string> programData;
     extern std::unordered_map<std::string, szl::Object> objectTypes;

@@ -1415,7 +1415,8 @@
     @stdszllibAllocFound
     XOR A
     PUSH HL
-    SBC HL,@szlCompilerHeapPosition
+    LD DE,@szlCompilerHeapPosition
+    SBC HL,DE
     INC HL
     INC HL
     EX DE,HL

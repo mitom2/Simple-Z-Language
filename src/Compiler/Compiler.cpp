@@ -159,7 +159,7 @@ void szl::compile(const std::string &in, const std::string &out)
     std::string res;
     {
         std::list<szl::Scope> scopes;
-        scopes.emplace_back(12, &res);
+        scopes.emplace_back(-1, &res);
         for (std::size_t i = 0; i < program.size();)
         {
             std::vector<std::string> internal;
