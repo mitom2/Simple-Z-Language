@@ -12,7 +12,7 @@ std::string szl::Function::getName() const
 
 std::string szl::Function::getLabel() const
 {
-    return name == "main" ? "@entry_point_" + szl::programData["name"] + "\n" : label;
+    return name == "main" ? "@entry_point_" + szl::programData["name"] + "\nCALL @stdszllib_heap_init\n" : label;
 }
 
 const std::vector<std::pair<std::string, std::string>> &szl::Function::getArguments() const
