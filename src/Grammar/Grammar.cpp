@@ -3380,17 +3380,42 @@ std::string szl::GrammarObjectCreation::execute(std::vector<szl::Token> &program
         throw szl::SZLException("Unexpected EOF while creating object", program[position - 1].file, program[position - 1].line);
     if (program[position].category != szl::TokenCategory::Punctuation)
         throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
-    if (program[position++].content != ";")
+    if (program[position].content == ";")
+    {
+        position++;
+        auto object = szl::objectTypes[type];
+        scope.back().insertVariable(name, object.getSize(), type);
+        return "LD DE,#" + std::to_string(object.getSize()) + "LD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
+    }
+    if (program[position].category != szl::TokenCategory::Keyword)
         throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    if (program[position++].content != "=")
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    std::string res = executeSubRules(program, position, scope, internalState);
+    if (!res.length())
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    if (position + 1 >= program.size())
+        throw szl::SZLException("Unexpected EOF while creating object", program[position].file, program[position].line);
+    if (program[++position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    if (program[position].content != ";")
+        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+    position++;
+    if (internalState.size() < 1)
+        throw szl::SZLException("No valid value passed while creating object", program[position].file, program[position].line);
+    if (internalState.back() != type)
+        throw szl::SZLException("No valid value passed while creating object", program[position].file, program[position].line);
+    internalState.pop_back();
     auto object = szl::objectTypes[type];
     scope.back().insertVariable(name, object.getSize(), type);
-    return "LD DE,#" + std::to_string(object.getSize()) + "LD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
+    return "\n";
 }
 
 szl::GrammarObjectCreation::GrammarObjectCreation(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarObjectCreation::initialize()
 {
+    addSubRule("chained operations");
 }
 
 std::string szl::GrammarSizeOf::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
