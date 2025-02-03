@@ -1,0 +1,11 @@
+// SQRT LIBRARY //
+
+ulong sqrt(ulong num)
+{
+    ulong res = ulong(0);
+    while (res * res <= num)
+    {
+        res = res + ulong(1);
+    }
+    return res - ulong(1);
+}
