@@ -1,0 +1,12 @@
+// POW LIBRARY //
+
+long pow(long num, uint exp)
+{
+    long res = long(1);
+    while (!exp)
+    {
+        res = res * num;
+        exp = exp - uint(1);
+    }
+    return res;
+}
