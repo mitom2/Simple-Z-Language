@@ -4,6 +4,8 @@
 #include <vector>
 #include <utility>
 #include "Variable/Variable.hpp"
+#include "Tables/Tables.hpp"
+#include "SZLException/SZLException.hpp"
 
 namespace szl
 {
