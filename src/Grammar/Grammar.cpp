@@ -1980,7 +1980,7 @@ std::string szl::GrammarGreater::execute(std::vector<szl::Token> &program, std::
     if (internalState.back() == "float")
     {
         internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_float\n";
+        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_float\n"; // TODO
     }
 
     // BOOL
@@ -2073,7 +2073,7 @@ std::string szl::GrammarLess::execute(std::vector<szl::Token> &program, std::siz
     if (internalState.back() == "float")
     {
         internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_float\n";
+        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_float\n"; // TODO
     }
 
     // BOOL
@@ -2168,7 +2168,7 @@ std::string szl::GrammarGreaterOrEqual::execute(std::vector<szl::Token> &program
     if (internalState.back() == "float")
     {
         internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_or_equal_float\n";
+        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_less_or_equal_float\n"; // TODO
     }
 
     // BOOL
@@ -2262,7 +2262,7 @@ std::string szl::GrammarLessOrEqual::execute(std::vector<szl::Token> &program, s
     if (internalState.back() == "float")
     {
         internalState.back() = "bool";
-        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_or_equal_float\n";
+        return resL + "PUSH HL\nPUSH DE\n" + res + "EXX\nPOP BC\nEXX\nPOP BC\nCALL @stdszllib_greater_or_equal_float\n"; // TODO
     }
 
     // BOOL
@@ -3136,7 +3136,7 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
     internalState.back() = type;
     if (internalState.back() == type)
         return res;
-    if (internalState.back() == "float")
+    if (internalState.back() == "float") // TODO
     {
         if (type == "long")
             return res + "CALL @stdszllib_conversion_float_to_long\n";
@@ -3147,7 +3147,7 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
         if (type == "uint" || type == "char")
             return res + "CALL @stdszllib_conversion_float_to_uint\n";
     }
-    else if (internalState.back() == "long")
+    else if (internalState.back() == "long") // TODO
     {
         if (type == "float")
             return res + "CALL @stdszllib_conversion_long_to_float\n";
@@ -3156,7 +3156,7 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
         if (type == "int" || type == "uint" || type == "char")
             return res + "EX DE,HL\n";
     }
-    else if (internalState.back() == "ulong")
+    else if (internalState.back() == "ulong") // TODO
     {
         if (type == "float")
             return res + "CALL @stdszllib_conversion_ulong_to_float\n";
@@ -3165,7 +3165,7 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
         if (type == "int" || type == "uint" || type == "char")
             return res + "EX DE,HL\n";
     }
-    else if (internalState.back() == "int")
+    else if (internalState.back() == "int") // TODO
     {
         if (type == "float")
             return res + "CALL @stdszllib_conversion_int_to_float\n";
@@ -3174,7 +3174,7 @@ std::string szl::GrammarConversion::execute(std::vector<szl::Token> &program, st
         if (type == "uint" || type == "char")
             return res;
     }
-    else if (internalState.back() == "uint" || internalState.back() == "char")
+    else if (internalState.back() == "uint" || internalState.back() == "char") // TODO
     {
         if (type == "float")
             return res + "CALL @stdszllib_conversion_uint_to_float\n";
