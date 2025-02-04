@@ -16,14 +16,15 @@
 #include <iostream>
 #include <vector>
 #include <list>
+#include <filesystem>
 
 namespace szl
 {
-    szl::Code loadFile(const std::string &path);
+    szl::Code loadFile(const std::string &path, const std::string &local);
 
     std::vector<szl::Token> tokenize(const szl::Code &code);
 
-    szl::Code preprocessor(szl::Code code);
+    szl::Code preprocessor(szl::Code code, const std::string &localPath);
 
     void compile(const std::string &in, const std::string &out);
 }

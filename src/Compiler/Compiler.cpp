@@ -1,10 +1,20 @@
 #include "Compiler.hpp"
 
-szl::Code szl::loadFile(const std::string &path)
+szl::Code szl::loadFile(const std::string &path, const std::string &local)
 {
     std::ifstream file(path);
     if (!file.good())
-        throw szl::SZLException("Input file '" + path + "' not found");
+    {
+        file.close();
+        file.open(local + path);
+        if (!file.good())
+        {
+            file.close();
+            file.open("res/" + path);
+            if (!file.good())
+                throw szl::SZLException("Input file '" + path + "' not found");
+        }
+    }
     std::string input;
     szl::Code content;
     for (std::size_t line = 0; std::getline(file, input); line++)
@@ -49,7 +59,7 @@ std::vector<szl::Token> szl::tokenize(const szl::Code &code)
     return res;
 }
 
-szl::Code szl::preprocessor(szl::Code code)
+szl::Code szl::preprocessor(szl::Code code, const std::string &localPath)
 {
     szl::Code res;
     for (std::size_t i = 0; i < code.size(); i++)
@@ -78,7 +88,7 @@ szl::Code szl::preprocessor(szl::Code code)
                     path += code[i];
                 }
                 if (!code.isFileIncluded(path))
-                    code.insert(loadFile(path), i + 1);
+                    code.insert(loadFile(path, localPath), i + 1);
             }
             else if (directive == "#program")
             {
@@ -150,7 +160,8 @@ szl::Code szl::preprocessor(szl::Code code)
 
 void szl::compile(const std::string &in, const std::string &out)
 {
-    auto program = tokenize(preprocessor(loadFile(in)));
+    auto localPath = std::filesystem::absolute(in).parent_path().string() + "/";
+    auto program = tokenize(preprocessor(loadFile(in, localPath), localPath));
     if (!szl::programData.count("name"))
         throw szl::SZLException("Preprocessor directive #program not found");
     szl::programData["position"] = szl::programData.count("position") ? szl::programData["position"] : "16384"; // Set HEX 4000 if not specified

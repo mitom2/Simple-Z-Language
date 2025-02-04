@@ -62,7 +62,7 @@ bool szl::Code::isFileIncluded(const std::string &file) const
 {
     for (auto &it : includedFiles)
     {
-        if (std::filesystem::equivalent(it, file))
+        if (std::filesystem::weakly_canonical(std::filesystem::absolute(it)) == std::filesystem::weakly_canonical(std::filesystem::absolute(file)))
             return true;
     }
     return false;
