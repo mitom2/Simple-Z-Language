@@ -3230,34 +3230,43 @@ szl::GrammarChainedOperations::GrammarChainedOperations(Grammar *root) : szl::Gr
 
 void szl::GrammarChainedOperations::initialize()
 {
-    addSubRule("brackets");
-    addSubRule("conversion");
-    addSubRule("in");
-    addSubRule("function call");
-    addSubRule("get member field");
-    addSubRule("at");
-    addSubRule("questioned at");
-    addSubRule("sizeof");
-    addSubRule("alloc");
     addSubRule("or");
     addSubRule("xor");
     addSubRule("and");
+
     addSubRule("equal");
     addSubRule("not equal");
     addSubRule("less or equal");
     addSubRule("less");
     addSubRule("greater or equal");
     addSubRule("greater");
+
     addSubRule("shift right");
     addSubRule("shift left");
+
     addSubRule("subtraction");
-    addSubRule("two literals addition");
     addSubRule("addition");
+    addSubRule("two literals addition");
+
     addSubRule("modulo");
     addSubRule("division");
     addSubRule("multiplication");
+
+    addSubRule("alloc");
+    addSubRule("sizeof");
+
+    addSubRule("questioned at");
+    addSubRule("at");
+
     addSubRule("negation");
     addSubRule("not");
+
+    addSubRule("get member field");
+    addSubRule("function call");
+    addSubRule("in");
+    addSubRule("conversion");
+    addSubRule("brackets");
+
     addSubRule("identifier");
     addSubRule("literal");
 }
