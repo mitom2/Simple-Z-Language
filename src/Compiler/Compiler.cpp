@@ -175,6 +175,8 @@ void szl::compile(const std::string &in, const std::string &out)
         {
             std::vector<std::string> internal;
             auto code = grammar.execute(program, i, scopes, internal);
+            float progress = float(i) / float(program.size());
+            std::cout << std::to_string(progress * 100.0) << "%" << std::endl;
             if (code != "")
             {
                 res += code;

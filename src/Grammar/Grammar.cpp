@@ -194,6 +194,8 @@ std::string szl::Grammar::compileScope(std::vector<szl::Token> &program, std::si
     {
         std::vector<std::string> internal;
         auto code = root->execute(program, position, scope, internal);
+        float progress = float(position) / float(program.size());
+        std::cout << std::to_string(progress * 100.0) << "%" << std::endl;
         if (code != "")
         {
             if (code == ";Close scope\n")
