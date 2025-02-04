@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     }
     catch (const szl::SZLException &e)
     {
-        std::cout << e.what() << '\nProgram was not compiled.\n';
+        std::cout << e.what() << "\nProgram was not compiled.\n";
         return 65;
     }
     return 0;
