@@ -44,3 +44,4 @@ add_custom_command(TARGET Simple-Z-Language POST_BUILD
     ${CMAKE_SOURCE_DIR}/examples
     ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/examples
 )
+set_target_properties(Simple-Z-Language PROPERTIES OUTPUT_NAME "szl")
