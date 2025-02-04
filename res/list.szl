@@ -17,10 +17,10 @@ object List
 List listCreate(uint valuesSize)
 {
     List res;
-    res.size = 0;
+    res.size = uint(0);
     res.valuesSz = valuesSize;
-    list.front = 0;
-    list.back = 0;
+    list.front = uint(0);
+    list.back = uint(0);
     return res;
 }
 
@@ -46,7 +46,7 @@ void listPushFront(uint list, uint value)
     el.value = value;
     l.front = alloc(sizeof(ListElement));
     el->l.front;
-    l.size = l.size + 1;
+    l.size = l.size + uint(1);
     l->list;
 }
 
@@ -59,9 +59,9 @@ void listPushBack(uint list, uint value)
     el.next = addr;
     el->l.back;
     el.value = value;
-    el.next = 0;
+    el.next = uint(0);
     el->addr;
-    l.size = l.size + 1;
+    l.size = l.size + uint(1);
     l->list;
 }
 
@@ -92,7 +92,7 @@ void listInsert(uint list, uint value, uint position)
     el.value = value;
     el.next = next;
     el->buf;
-    l.size = l.size + 1;
+    l.size = l.size + uint(1);
     l->list;
 }
 
@@ -106,7 +106,7 @@ void listPopFront(uint list)
     }
     ListElement el = ListElement @addr;
     l.front = el.next;
-    l.size = l.size - 1;
+    l.size = l.size - uint(1);
     l->list;
     free(el.value, l.valuesSz);
     free(addr, sizeof(ListElement));
@@ -115,7 +115,7 @@ void listPopFront(uint list)
 void listRemove(uint list, uint position)
 {
     List l = List @list;
-    if (l.size == 1)
+    if (l.size == uint(1))
     {
         listPopFront(list);
         return 0;
