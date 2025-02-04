@@ -19,8 +19,8 @@ List listCreate(uint valuesSize)
     List res;
     res.size = uint(0);
     res.valuesSz = valuesSize;
-    list.front = uint(0);
-    list.back = uint(0);
+    res.front = uint(0);
+    res.back = uint(0);
     return res;
 }
 
