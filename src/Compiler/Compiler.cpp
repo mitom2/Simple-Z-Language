@@ -183,7 +183,7 @@ void szl::compile(const std::string &in, const std::string &out)
             throw szl::SZLException("Syntax error");
         }
     }
-    res = ".include res/stdszllib.ia\nCALL @entry_point_" + szl::programData["name"] + "\nHALT\n" + res + "\n@szlCompilerHeapPosition\n";
+    res = ".include res/stdszllib.ia\nCALL @stdszllib_heap_init\nCALL @entry_point_" + szl::programData["name"] + "\nHALT\n" + res + "\n@szlCompilerHeapPosition\n";
     std::string filename = in + ".ia", size = "64k", output = out;
     std::ofstream file(filename);
     if (!file.good())
