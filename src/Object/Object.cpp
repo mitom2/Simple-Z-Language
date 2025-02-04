@@ -30,4 +30,5 @@ int szl::Object::getVariableOffset(const int objectOffset, const std::string &na
             return objectOffset - it.second.getOffset() + 1;
         }
     }
+    throw szl::SZLException("Unknown variable '" + name + "'");
 }
