@@ -9,7 +9,7 @@ void szl::Code::insert(std::string codeText, std::size_t position, std::string f
         szl::CodeCharacter newCharacter;
         newCharacter.contents = codeText[i];
         newCharacter.file = file;
-        newCharacter.line = line;
+        newCharacter.line = std::to_string(line);
         code.insert(code.begin() + position + i, newCharacter);
     }
 }

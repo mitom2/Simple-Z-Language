@@ -21,9 +21,9 @@ int main(int argc, char **argv)
     {
         szl::compile(in, out);
     }
-    catch (const szl::SZLException &e)
+    catch (szl::SZLException &e)
     {
-        std::cout << e.what() << "\nProgram was not compiled.\n";
+        std::cout << e.wht() << "\nProgram was not compiled.\n";
         return 65;
     }
     return 0;

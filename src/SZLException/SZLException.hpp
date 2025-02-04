@@ -13,6 +13,6 @@ namespace szl
     public:
         SZLException(std::string msg, const std::string &file, const std::string &line) : msg(msg), file(file), line(line) {}
         SZLException(std::string msg) : msg(msg), file(""), line("") {}
-        virtual const char *what() const noexcept;
+        std::string wht() const noexcept;
     };
 } // namespace szl
