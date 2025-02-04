@@ -26,7 +26,7 @@ namespace szl
 
         int getSize() const;
 
-        int getVariablePosition(const int objectPosition, const std::string &name) const;
+        int getVariableOffset(const int objectOffset, const std::string &name) const;
 
         std::vector<std::pair<std::string, szl::Variable>> &getVariables() { return variables; }
 

@@ -406,23 +406,27 @@ std::string szl::GrammarAssignment::execute(std::vector<szl::Token> &program, st
     {
         return returnWithClear(1, internalState);
     }
+    if (internalState.size() < 1)
+        throw szl::SZLException("Assiging empty value to variable '" + name + "'", program[position].file, program[position].line);
+    if (internalState.back() != scope.back()[name].getType())
+        throw szl::SZLException("Assigning value of type '" + internalState.back() + "' to variable of type '" + scope.back()[name].getType() + "'", program[position].file, program[position].line);
     position = newPos + 1;
+    internalState.pop_back();
 
     if (!scope.back().exists(name))
         throw szl::SZLException("Assigning to variable '" + name + "', which does not exist in this scope", program[position].file, program[position].line);
 
-    internalState.push_back(scope.back()[name].getType());
     auto size = scope.back()[name].getStackSize();
     if (size == 2)
-        return subRes + "LD (#" + std::to_string(scope.back()[name].getPosition()) + "),HL\n";
+        return subRes + "EX DE,HL\n" + scope.back()(name) + "LD (HL),D\nDEC HL\nLD (HL),E\n";
     if (size == 4)
-        return subRes + "LD (#" + std::to_string(scope.back()[name].getPosition()) + "),HL\n" + "LD (#" + std::to_string(scope.back()[name].getPosition() + 2) + "),DE\n";
+        return subRes + "LD B,H\nLD C,L\n" + scope.back()(name) + "LD (HL),B\nDEC HL\nLD (HL),C\nDEC HL\nLD (HL),D\nDEC HL\nLD (HL),E\n";
     else
     {
         if (!szl::objectTypes.count(scope.back()[name].getType()))
             throw szl::SZLException("Unknown type '" + scope.back()[name].getType() + "' in assignment", program[position].file, program[position].line);
         auto object = szl::objectTypes[scope.back()[name].getType()];
-        return subRes + "LD DE,#" + std::to_string(scope.back()[name].getPosition()) + "\nLD BC,#" + std::to_string(object.getSize()) + "\nLD H,B\nLD L,C\nADD HL,SP\nLDDR\nLD HL,#" + std::to_string(object.getSize()) + "\nADD HL,SP\nLD SP,HL\n";
+        return subRes + scope.back()(name) + "EX DE,HL\nLD BC,#" + std::to_string(scope.back()[name].getStackSize()) + "\nLD H,B\nLD L,C\nADD HL,SP\nPUSH HL\nDEC HL\nLDDR\nPOP HL\nLD SP,HL\n";
     }
 }
 
@@ -625,16 +629,16 @@ std::string szl::GrammarIdentifier::execute(std::vector<szl::Token> &program, st
     internalState.push_back(scope.back()[name].getType());
     if (size == 2)
     {
-        return "LD HL,(#" + std::to_string(scope.back()[name].getPosition()) + ")\n";
+        return scope.back()(name) + "LD D,(HL)\nDEC HL\nLD E,(HL)\nEX DE,HL\n";
     }
     if (size == 4)
     {
-        return "LD HL,(#" + std::to_string(scope.back()[name].getPosition()) + ")\nLD DE,(#" + std::to_string(scope.back()[name].getPosition() + 2) + ")\n";
+        return scope.back()(name) + "LD B,(HL)\nDEC HL\nLD C,(HL)\nDEC HL\nLD D,(HL)\nDEC HL\nLD E,(HL)\nLD H,B\nLD L,C\n";
     }
     auto variable = scope.back()[name];
     if (!szl::objectTypes.count(variable.getType()))
         throw szl::SZLException("Variable with identifier '" + name + "' is of unknown type '" + variable.getType() + "'", program[position].file, program[position].line);
-    return "LD BC,#" + std::to_string(szl::objectTypes[variable.getType()].getSize()) + "\nLD HL,%0\nADD HL,SP\nDEC HL\nEX DE,HL\nLD HL,#" + std::to_string(variable.getPosition()) + "\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
+    return "LD HL,%0\nADD HL,SP\nEX DE,HL\nDEC DE\n" + scope.back()(name) + "LD BC,#" + std::to_string(scope.back()[name].getStackSize()) + "\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
 }
 
 szl::GrammarIdentifier::GrammarIdentifier(Grammar *root) : szl::Grammar(root) {}
@@ -682,8 +686,6 @@ std::string szl::GrammarLiteral::execute(std::vector<szl::Token> &program, std::
                     num++;
                 }
                 throw szl::SZLException("Literal value exceeds maximum limit", program[position].file, program[position].line);
-                // scope.back().insertVariable("[LITERALSAVE" + std::to_string(num) + "]", size);
-                // return cmd + "LD HL,#" + std::to_string(scope["[LITERALSAVE" + std::to_string(num) + "]"].getPosition());
             }
             if (res.length() > 16)
             {
@@ -2337,7 +2339,7 @@ void szl::GrammarFor::initialize()
 szl::Function szl::GrammarFunctionDeclaration::createFunctionTableEntry(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
 {
     std::vector<std::pair<std::string, std::string>> arguments;
-    if (program[position].category != szl::TokenCategory::Keyword)
+    if (program[position].category != szl::TokenCategory::Keyword && program[position].category != szl::TokenCategory::Identifier)
         throw szl::SZLException("Syntax error while declaring new function", program[position].file, program[position].line);
     auto returns = program[position++].content;
     if (position >= program.size())
@@ -2399,7 +2401,7 @@ std::string szl::GrammarFunctionDeclaration::execute(std::vector<szl::Token> &pr
 {
     if (position + 4 >= program.size())
         return "";
-    if (program[position].category != szl::TokenCategory::Keyword)
+    if (program[position].category != szl::TokenCategory::Keyword && program[position].category != szl::TokenCategory::Identifier)
         return "";
     if (program[position + 1].category != szl::TokenCategory::Identifier)
         return "";
@@ -2427,11 +2429,12 @@ std::string szl::GrammarFunctionDeclaration::execute(std::vector<szl::Token> &pr
     else if (szl::objectTypes.count(type))
         retSize = szl::objectTypes[type].getSize();
     else
-        throw szl::SZLException("Function return type not defined", program[position].file, program[position].line);
+        throw szl::SZLException("Function return type '" + type + "' is unknown", program[position].file, program[position].line);
+    szl::programData["current function return type"] = type;
 
     auto arguments = function.getArguments();
     std::list<szl::Scope> newScope;
-    newScope.emplace_back(12, &res, &scope.front());
+    newScope.emplace_back(retSize, &res, &scope.front());
     for (std::size_t i = 0; i < arguments.size(); i++)
     {
         int sz = 0;
@@ -2452,13 +2455,14 @@ std::string szl::GrammarFunctionDeclaration::execute(std::vector<szl::Token> &pr
             throw szl::SZLException("Function argument type unknown", program[position].file, program[position].line);
         newScope.back().insertVariable(arguments[i].second, sz, t);
     }
-    newScope.emplace_back(retSize, &res, &newScope.back());
-    res += compileScope(program, position, newScope, internalState);
+    newScope.back().insertVariable("[szlCompilerRetAddr]", 2, "uint");
+    szl::programData["current function return"] = "@szlCompilerReturnFunctionId" + std::to_string(szl::nextUniqueId++) + "\n";
+    res += compileScope(program, position, newScope, internalState) + szl::programData["current function return"];
+    res += "EXX\n" + newScope.back()("[szlCompilerRetAddr]") + "LD D,(HL)\nDEC HL\nLD E,(HL)\nPUSH DE\nPOP IY\nEXX\n";
+    newScope.back().addCustomDeleteCode("PUSH IY\n");
     newScope.back().changeCode(&res);
     newScope.pop_back();
-    newScope.back().changeCode(&res);
-    newScope.pop_back();
-    return res + "RET\n";
+    return res + "\nRET\n";
 }
 
 szl::GrammarFunctionDeclaration::GrammarFunctionDeclaration(Grammar *root) : szl::Grammar(root) {}
@@ -2475,7 +2479,16 @@ std::string szl::GrammarReturn::execute(std::vector<szl::Token> &program, std::s
         return "";
     if (++position >= program.size())
         throw szl::SZLException("Unexpected EOF on return", program[position].file, program[position].line);
-    return executeSubRules(program, position, scope, internalState) + "\n";
+    std::string res = executeSubRules(program, position, scope, internalState);
+    auto type = szl::programData["current function return type"];
+    if (type != "void")
+    {
+        if (res.length() < 1)
+            throw szl::SZLException("Return requires '" + type + "' value", program[position].file, program[position].line);
+        if (internalState.back() != type)
+            throw szl::SZLException("Return requires '" + type + "' value", program[position].file, program[position].line);
+    }
+    return res + "JP " + szl::programData["current function return"];
 }
 
 szl::GrammarReturn::GrammarReturn(Grammar *root) : szl::Grammar(root) {}
@@ -2758,7 +2771,7 @@ std::string szl::GrammarQuestionedAt::execute(std::vector<szl::Token> &program, 
     if (!scope.back().exists(program[position].content))
         throw szl::SZLException("Requested address of variable '" + program[position].content + "', which does not exist", program[position].file, program[position].line);
     internalState.push_back("uint");
-    return "LD HL,#" + std::to_string(scope.back()[program[position++].content].getPosition()) + "\n";
+    return scope.back()(program[position++].content);
 }
 
 szl::GrammarQuestionedAt::GrammarQuestionedAt(Grammar *root) : szl::Grammar(root) {}
@@ -2940,17 +2953,18 @@ std::string szl::GrammarGetMemberField::execute(std::vector<szl::Token> &program
     if (!szl::objectTypes.count(variable.getType()))
         return "";
     auto object = szl::objectTypes[variable.getType()];
-    if (++position >= program.size())
-        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
-    if (program[position].category != szl::TokenCategory::Punctuation)
-        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
-    if (program[position++].content != ".")
-        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
-    if (position >= program.size())
-        throw szl::SZLException("Unexpected EOF while accessing object", program[position].file, program[position].line);
-    if (program[position].category != szl::TokenCategory::Identifier)
-        throw szl::SZLException("Syntax error while accessing object", program[position].file, program[position].line);
-    auto memberName = program[position].content;
+    std::size_t newPos = position + 1;
+    if (newPos >= program.size())
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Punctuation)
+        return "";
+    if (program[newPos++].content != ".")
+        return "";
+    if (newPos >= program.size())
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Identifier)
+        return "";
+    auto memberName = program[position = newPos].content;
     if (!object.getContents().count(memberName))
         throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
     auto member = object.getContents()[memberName];
@@ -2958,12 +2972,12 @@ std::string szl::GrammarGetMemberField::execute(std::vector<szl::Token> &program
     if (!szl::objectTypes.count(member))
     {
         if (member == "int" || member == "uint" || member == "char" || member == "bool")
-            return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD D,(HL)\nDEC HL\nLD E,(HL)\nEX DE,HL\n";
+            return "LD HL,#" + std::to_string(object.getVariableOffset(variable.getOffset(), memberName)) + "\nADD HL,SP\nLD D,(HL)\nDEC HL\nLD E,(HL)\nEX DE,HL\n";
         if (member == "long" || member == "ulong")
-            return "LD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD B,(HL)\nDEC HL\nLD C,(HL)\nDEC HL\nLD D,(HL)\nDEC HL\nLD E,(HL)\nLD H,B\nLD L,C\n";
+            return "LD HL,#" + std::to_string(object.getVariableOffset(variable.getOffset(), memberName)) + "\nAD HL,SP\nLD B,(HL)\nDEC HL\nLD C,(HL)\nDEC HL\nLD D,(HL)\nDEC HL\nLD E,(HL)\nLD H,B\nLD L,C\n";
         throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
     }
-    return "LD HL,%0\nADD HL,SP\nDEC HL\n EX DE,HL\nLD HL,#" + std::to_string(object.getVariablePosition(variable.getPosition(), memberName)) + "\nLD BC,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
+    return "LD HL,%0\nADD HL,SP\nDEC HL\n EX DE,HL\nLD HL,#" + std::to_string(object.getVariableOffset(variable.getOffset(), memberName)) + "\nADD HL,SP\nLD BC,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLDDR\nINC DE\nEX DE,HL\nLD SP,HL\n";
 }
 
 szl::GrammarGetMemberField::GrammarGetMemberField(Grammar *root) : szl::Grammar(root) {}
@@ -3003,7 +3017,7 @@ std::string szl::GrammarSetMemberField::execute(std::vector<szl::Token> &program
     if (!object.getContents().count(memberName))
         throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
     auto member = object.getContents()[memberName];
-    auto pos = std::to_string(object.getVariablePosition(variable.getPosition(), memberName));
+    auto pos = std::to_string(object.getVariableOffset(variable.getOffset(), memberName));
     auto res = executeSubRules(program, position = position + 2, scope, internalState);
     if (!res.length())
         throw szl::SZLException("No valid value to assign to member '" + memberName + "'", program[position].file, program[position].line);
@@ -3015,12 +3029,12 @@ std::string szl::GrammarSetMemberField::execute(std::vector<szl::Token> &program
     if (!szl::objectTypes.count(member))
     {
         if (member == "int" || member == "uint" || member == "char" || member == "bool")
-            return res + "EX DE,HL\nLD HL,#" + pos + "\nLD (HL),D\nDEC HL\nLD (HL),E\n";
+            return res + "EX DE,HL\nLD HL,#" + pos + "\nADD HL,SP\nLD (HL),D\nDEC HL\nLD (HL),E\n";
         if (member == "long" || member == "ulong")
-            return res + "LD B,H\nLD C,L\nLD HL,#" + pos + "\nLD (HL),B\nDEC HL\nLD (HL),C\nDEC HL\nLD (HL),D\nDEC HL\nLD (HL),E\n";
+            return res + "LD B,H\nLD C,L\nLD HL,#" + pos + "\nADD HL,SP\nLD (HL),B\nDEC HL\nLD (HL),C\nDEC HL\nLD (HL),D\nDEC HL\nLD (HL),E\n";
         throw szl::SZLException("Member named '" + memberName + "' type '" + member + "' not recognized", program[position].file, program[position].line);
     }
-    return res + "LD DE,#" + pos + "\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLD B,H\nLD C,L\nADD HL,SP\nLDDR\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nADD HL,SP\nLD SP,HL\n";
+    return res + "LD DE,#" + pos + "\nADD HL,SP\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nLD B,H\nLD C,L\nADD HL,SP\nLDDR\nLD HL,#" + std::to_string(szl::objectTypes[member].getSize()) + "\nADD HL,SP\nLD SP,HL\n";
 }
 
 szl::GrammarSetMemberField::GrammarSetMemberField(Grammar *root) : szl::Grammar(root) {}
@@ -3082,7 +3096,12 @@ std::string szl::GrammarObjectDeclaration::execute(std::vector<szl::Token> &prog
             else if (type == "long" || type == "ulong")
                 size = 4;
             szl::objectTypes[name].getContents().emplace(memberName, type);
-            szl::objectTypes[name].getVariables().push_back({memberName, szl::Variable(offset, size, type)});
+            auto &vars = szl::objectTypes[name].getVariables();
+            for (auto &it : vars)
+            {
+                it.second.setOffset(it.second.getNextOffset(size));
+            }
+            vars.push_back({memberName, szl::Variable(size, type)});
             offset += size;
         }
     }
@@ -3104,24 +3123,24 @@ std::string szl::GrammarObjectCreation::execute(std::vector<szl::Token> &program
         return "";
     auto newPos = position + 1;
     if (newPos >= program.size())
-        throw szl::SZLException("Unexpected EOF while creating object of type '" + type + "'", program[position].file, program[position].line);
+        return "";
     if (program[newPos].category != szl::TokenCategory::Identifier)
-        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
+        return "";
     auto name = program[newPos++].content;
     if (scope.back().exists(name))
         throw szl::SZLException("Redeclaration of variable '" + name + "'", program[position].file, program[position].line);
     if (functions.count(name))
         throw szl::SZLException("Redeclaration of function '" + name + "'", program[position].file, program[position].line);
-    if (position = newPos + 1 >= program.size())
-        throw szl::SZLException("Unexpected EOF while creating object", program[position - 1].file, program[position - 1].line);
-    if (program[position].category != szl::TokenCategory::Punctuation)
-        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
-    if (program[position].content == ";")
+    if (newPos >= program.size())
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Punctuation)
+        return "";
+    if (program[position = newPos].content == ";")
     {
         position++;
         auto object = szl::objectTypes[type];
         scope.back().insertVariable(name, object.getSize(), type);
-        return "LD DE,#" + std::to_string(object.getSize()) + "LD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
+        return "LD DE,#" + std::to_string(object.getSize()) + "\nLD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
     }
     if (program[position].category != szl::TokenCategory::Keyword)
         throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);

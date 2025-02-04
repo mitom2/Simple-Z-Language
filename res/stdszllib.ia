@@ -12,99 +12,7 @@
 
 ;After RET, stack must contain only return address (and possibly return values in discussed cases).
 
-
-
-;Following functions are used to store and restore registers:
-
-;Stores all primary registers (AF, BC, DE, HL, IX, IY) to the stack
-@stdszllib_store_all_registers
-    EXX
-    POP HL
-    EXX
-    PUSH AF
-    PUSH BC
-    PUSH DE
-    PUSH HL
-    PUSH IX
-    PUSH IY
-    EXX
-    PUSH HL
-    EXX
-    RET
-
-;Restores all primary registers (AF, BC, DE, HL, IX, IY) from the stack
-@stdszllib_restore_all_registers
-    EXX
-    POP HL
-    EXX
-    POP IY
-    POP IX
-    POP HL
-    POP DE
-    POP BC
-    POP AF
-    EXX
-    PUSH HL
-    EXX
-    RET
-
-;Stores all default registers (AF, BC, DE, IX, IY) to the stack
-@stdszllib_store_default_registers
-    EXX
-    POP HL
-    EXX
-    PUSH AF
-    PUSH BC
-    PUSH DE
-    PUSH IX
-    PUSH IY
-    EXX
-    PUSH HL
-    EXX
-    RET
-
-;Restores all default registers (AF, BC, DE, IX, IY) from the stack
-@stdszllib_restore_default_registers
-    EXX
-    POP HL
-    EXX
-    POP IY
-    POP IX
-    POP DE
-    POP BC
-    POP AF
-    EXX
-    PUSH HL
-    EXX
-    RET
-
-;Stores all basic registers (AF, BC, IX, IY) to the stack
-@stdszllib_store_basic_registers
-    EXX
-    POP HL
-    EXX
-    PUSH AF
-    PUSH BC
-    PUSH IX
-    PUSH IY
-    EXX
-    PUSH HL
-    EXX
-    RET
-
-;Restores all basic registers (AF, BC, IX, IY) from the stack
-@stdszllib_restore_basic_registers
-    EXX
-    POP HL
-    EXX
-    POP IY
-    POP IX
-    POP BC
-    POP AF
-    EXX
-    PUSH HL
-    EXX
-    RET
+JP @stdszllibEnd
 
 ;Moves stack to lower addresses, creating free memory at the upper regions of the memory. Takes one argument: unsigned int offset the stack needs to be moved by.
 @stdszllib_move_stack
@@ -1498,3 +1406,5 @@
     DEC DE
     LD (HL),%0
     JP @stdszllibHeapInitLoop
+
+@stdszllibEnd

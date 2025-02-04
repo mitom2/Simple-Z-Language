@@ -21,13 +21,13 @@ int szl::Object::getSize() const
     return res;
 }
 
-int szl::Object::getVariablePosition(const int objectPosition, const std::string &name) const
+int szl::Object::getVariableOffset(const int objectOffset, const std::string &name) const
 {
     for (const auto &it : variables)
     {
         if (it.first == name)
         {
-            return it.second.getPosition(objectPosition);
+            return objectOffset - it.second.getOffset() + 1;
         }
     }
 }

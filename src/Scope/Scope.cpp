@@ -1,28 +1,14 @@
 #include "Scope.hpp"
 
-szl::Scope::Scope(int returnSize, std::string *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr)
+szl::Scope::Scope(int returnSize, std::string *code, Scope *parent) : code(code), parent(parent), stackHead(nullptr), returnSize(returnSize)
 {
     uniqueId = nextUniqueId++;
-    if (returnSize >= 0)
-    {
-        szl::storeRegisters(returnSize, *code, *this);
-        skipCleanup = false;
-    }
-    else
-        skipCleanup = true;
 }
 
-szl::Scope::Scope(int returnSize, Scope *parent)
+szl::Scope::Scope(int returnSize, Scope *parent) : returnSize(returnSize)
 {
     uniqueId = nextUniqueId++;
     code = parent->getCode();
-    if (returnSize >= 0)
-    {
-        szl::storeRegisters(returnSize, *code, *this);
-        skipCleanup = false;
-    }
-    else
-        skipCleanup = true;
 }
 
 szl::Variable szl::Scope::operator[](const std::string &name)
@@ -30,10 +16,21 @@ szl::Variable szl::Scope::operator[](const std::string &name)
     if (!variables.count(name))
     {
         if (parent == nullptr)
-            throw szl::SZLException("Variable not found");
+            throw szl::SZLException("Variable '" + name + "' not found");
         return parent->operator[](name);
     }
     return variables[name];
+}
+
+std::string szl::Scope::operator()(const std::string &name)
+{
+    if (!variables.count(name))
+    {
+        if (parent == nullptr)
+            throw szl::SZLException("Variable '" + name + "' not found");
+        return parent->operator()(name);
+    }
+    return "LD HL,#" + std::to_string(variables[name].getOffset()) + "\nADD HL,SP\n";
 }
 
 bool szl::Scope::exists(const std::string &name) const
@@ -49,18 +46,17 @@ bool szl::Scope::exists(const std::string &name) const
 
 void szl::Scope::insertVariable(const std::string &name, szl::Variable &var)
 {
+    for (auto &it : variables)
+    {
+        it.second.setOffset(it.second.getNextOffset(var.getStackSize()));
+    }
     variables[name] = var;
     stackHead = &variables[name];
 }
 
 void szl::Scope::insertVariable(const std::string &name, int size, const std::string &type)
 {
-    insertVariable(name, getNextOffset(size), size, type);
-}
-
-void szl::Scope::insertVariable(const std::string &name, int offset, int size, const std::string &type)
-{
-    szl::Variable v(offset, size, type);
+    szl::Variable v(size, type);
     insertVariable(name, v);
 }
 
@@ -102,11 +98,11 @@ void szl::Scope::renameHead(const std::string &newName)
 
 void szl::Scope::popHead()
 {
-    auto offset = stackHead->getOffset();
+    auto size = stackHead->getStackSize();
     szl::Variable *newHead = nullptr;
     for (auto &it : variables)
     {
-        if (it.second.getOffset() == offset)
+        if (it.second.getOffset() == 0)
         {
             variables.erase(it.first);
             break;
@@ -114,12 +110,10 @@ void szl::Scope::popHead()
     }
     for (auto &it : variables)
     {
-        if (newHead != nullptr)
-        {
-            newHead = newHead->getOffset() < it.second.getOffset() ? &(it.second) : newHead;
-        }
+        it.second.setOffset(it.second.getOffset() - size);
+        if (!it.second.getOffset())
+            stackHead = &it.second;
     }
-    stackHead = newHead;
 }
 
 std::string szl::Scope::getLabel() const
@@ -144,25 +138,27 @@ void szl::Scope::addCustomDeleteCode(const std::string &code)
 
 szl::Scope::~Scope()
 {
-    if (!skipCleanup)
+    if (!returnSize)
     {
         int offset = 0;
         for (auto variable = variables.begin(); variable != variables.end();)
         {
-            if ((*variable).first == "[REGSAVE]")
-            {
-                variable++;
-                continue;
-            }
             offset += (*variable).second.getStackSize();
             variable = variables.erase(variable);
         }
-        if (!variables.count("[REGSAVE]"))
-            throw szl::SZLException("Registers restoration failed while concluding scope");
-        stackHead = &variables["[REGSAVE]"];
         if (offset)
             *code += "EXX\nLD HL,#" + std::to_string(offset) + "\nADD HL,SP\nLD SP,HL\nEXX\n";
-        szl::restoreRegisters(*code, *this);
+    }
+    else if (returnSize > 0)
+    {
+        int offset = 0;
+        for (auto variable = variables.begin(); variable != variables.end();)
+        {
+            offset += (*variable).second.getStackSize();
+            variable = variables.erase(variable);
+        }
+        if (offset)
+            *code += "LD HL,#" + std::to_string(offset) + "\nADD HL,SP\nEX DE,HL\nLD HL,#" + std::to_string(returnSize) + "\nLD B,H\nLD C,L\nADD HL,SP\nLDDR\nEX DE,HL\nLD SP,HL\n";
     }
     *code += deleteCode + "@szlCompilerLabelScopeClosedId" + std::to_string(uniqueId) + "\n";
 }

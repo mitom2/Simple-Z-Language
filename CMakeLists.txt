@@ -14,7 +14,6 @@ src/Scope/Scope.cpp
 src/Variable/Variable.cpp
 src/Code/Code.cpp
 src/SZLException/SZLException.cpp
-src/CommonFunctions/CommonFunctions.cpp
 src/Compiler/Compiler.cpp
 src/Rules/Rule.cpp
 src/Rules/RuleWhitespace.cpp

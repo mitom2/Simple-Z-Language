@@ -1,7 +1,6 @@
 #pragma once
 #include "Code/Code.hpp"
 #include "Scope/Scope.hpp"
-#include "CommonFunctions/CommonFunctions.hpp"
 #include "SZLException/SZLException.hpp"
 #include "Rules/Rule.hpp"
 #include "Rules/RuleWhitespace.hpp"

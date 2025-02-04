@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include "Variable/Variable.hpp"
 #include "SZLException/SZLException.hpp"
-#include "CommonFunctions/CommonFunctions.hpp"
 #include "NextUniqueId/NextUniqueId.hpp"
 
 namespace szl
@@ -15,7 +14,7 @@ namespace szl
         std::unordered_map<std::string, szl::Variable> variables;
         szl::Variable *stackHead;
         std::string *code;
-        bool skipCleanup;
+        int returnSize;
         std::string deleteCode;
 
     public:
@@ -24,6 +23,8 @@ namespace szl
         Scope(int returnSize, Scope *parent);
 
         szl::Variable operator[](const std::string &name);
+
+        std::string operator()(const std::string &name);
 
         bool exists(const std::string &name) const;
 
@@ -36,8 +37,6 @@ namespace szl
         void insertVariable(const std::string &name, szl::Variable &var);
 
         void insertVariable(const std::string &name, int size, const std::string &type);
-
-        void insertVariable(const std::string &name, int offset, int size, const std::string &type);
 
         int getHeadOffset() const;
 
