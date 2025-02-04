@@ -223,6 +223,7 @@ void szl::Grammar::initialize()
     addSubRule("scope closed");
     addSubRule("single variable declaration");
     addSubRule("semicolon");
+    addSubRule("assembly");
     addSubRule("lock");
     addSubRule("unlock");
     addSubRule("out");
@@ -307,6 +308,7 @@ szl::Grammar::Grammar(Grammar *root) : root(root)
     grammars.emplace("sizeof", new szl::GrammarSizeOf(this));
     grammars.emplace("chained operations", new szl::GrammarChainedOperations(this));
     grammars.emplace("memcpy", new szl::GrammarMemcpy(this));
+    grammars.emplace("assembly", new szl::GrammarAssembly(this));
 }
 
 szl::Grammar::~Grammar()
@@ -3332,4 +3334,46 @@ szl::GrammarMemcpy::GrammarMemcpy(Grammar *root) : szl::Grammar(root) {}
 void szl::GrammarMemcpy::initialize()
 {
     addSubRule("chained operations");
+}
+
+std::string szl::GrammarAssembly::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
+{
+    auto newPos = position;
+    std::string res;
+    if (program[newPos].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[newPos].content != "assembly")
+        return "";
+    if (++newPos >= program.size())
+        return "";
+    if (program[newPos].category != szl::TokenCategory::Bracket)
+        return "";
+    if (program[newPos].content != "(")
+        return "";
+    if ((position = newPos + 1) >= program.size())
+        throw szl::SZLException("Unexpected EOF on assembly", program[position].file, program[position].line);
+    if (program[position].category != szl::TokenCategory::Literal)
+        throw szl::SZLException("Assembly expects assembly code between \" and \"", program[position].file, program[position].line);
+    auto code = program[position++].content;
+    if (code.length() < 3)
+        throw szl::SZLException("Assembly expects non-empty assembly code between \" and \"", program[position].file, program[position].line);
+    if (position >= program.size())
+        throw szl::SZLException("Unexpected EOF on assembly", program[position - 1].file, program[position - 1].line);
+    if (program[position].category != szl::TokenCategory::Bracket)
+        throw szl::SZLException("Assembly syntax error", program[position].file, program[position].line);
+    if (program[position].content != ")")
+        throw szl::SZLException("Assembly syntax error", program[position].file, program[position].line);
+    if (++position >= program.size())
+        throw szl::SZLException("Unexpected EOF on assembly", program[position - 1].file, program[position - 1].line);
+    if (program[position].category != szl::TokenCategory::Punctuation)
+        throw szl::SZLException("Assembly syntax error", program[position].file, program[position].line);
+    if (program[position].content != ";")
+        throw szl::SZLException("Assembly syntax error", program[position].file, program[position].line);
+    return code.substr(1, code.length() - 2) + "\n";
+}
+
+szl::GrammarAssembly::GrammarAssembly(Grammar *root) : szl::Grammar(root) {}
+
+void szl::GrammarAssembly::initialize()
+{
 }

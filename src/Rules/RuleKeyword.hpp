@@ -20,6 +20,7 @@ namespace szl
             "bool", "char",
             "@", "->", "?",
             "alloc", "free", "memcpy",
+            "assembly",
             "object",
             "void",
             "in", "out",
