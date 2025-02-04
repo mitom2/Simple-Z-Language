@@ -7,9 +7,9 @@ int main(int argc, char **argv)
     std::string in, out;
     for (int i = 0; i + 1 < argc; i++)
     {
-        if (argv[i] == "-i")
+        if (std::string(argv[i]) == "-i")
             in = argv[i + 1];
-        else if (argv[i] == "-o")
+        else if (std::string(argv[i]) == "-o")
             out = argv[i + 1];
     }
     if (!in.length() || !out.length())
