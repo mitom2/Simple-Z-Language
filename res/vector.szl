@@ -11,22 +11,22 @@ object Vector
 Vector vectorCreate(uint valuesSize)
 {
     Vector res;
-    res.address = alloc(valuesSize * 4);
-    res.capacity = 4;
+    res.address = alloc(valuesSize * uint(4));
+    res.capacity = uint(4);
     res.valuesSz = valuesSize;
-    res.size = 0;
+    res.size = uint(0);
     return res;
 }
 
 void vectorReserve(uint vector, uint size)
 {
-    if (size <= capacity)
+    Vector v = Vector @vector;
+    if (size <= v.capacity)
     {
         return 0;
     }
-    Vector v = Vector @vector;
     uint newAddr = alloc(v.valuesSz * size);
-    memcpy(v.address, memAddr, v.alueszSz * v.size);
+    memcpy(v.address, newAddr, v.valuesSz * v.size);
     free(v.address, v.capacity * v.valuesSz);
     v.address = newAddr;
     v.capacity = size;
@@ -42,7 +42,7 @@ void vectorReallocate(uint vector)
 void vectorPushBack(uint vector, uint valuePtr)
 {
     Vector v = Vector @vector;
-    v.size = v.size + 1;
+    v.size = v.size + uint(1);
     if (v.capacity == v.size)
     {
         vectorReallocate(?@v);
@@ -51,14 +51,14 @@ void vectorPushBack(uint vector, uint valuePtr)
     v->vector;
 }
 
-void vectorPopBack(uint vector);
+void vectorPopBack(uint vector)
 {
     Vector v = Vector @vector;
-    if (v.size == 0)
+    if (v.size == uint(0))
     {
         return 0;
     }
-    v.size = v.size - 1;
+    v.size = v.size - uint(1);
     v->vector;
 }
 
@@ -67,7 +67,7 @@ uint vectorAt(uint vector, uint position)
     Vector v = Vector @vector;
     if (v.size <= position)
     {
-        return 0;
+        return uint(0);
     }
     return v.address + v.valuesSz * position;
 }
@@ -75,7 +75,7 @@ uint vectorAt(uint vector, uint position)
 void vectorClear(uint vector)
 {
     Vector v = Vector @vector;
-    v.size = 0;
+    v.size = uint(0);
     v->vector;
 }
 

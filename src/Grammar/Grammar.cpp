@@ -406,15 +406,11 @@ std::string szl::GrammarAssignment::execute(std::vector<szl::Token> &program, st
     std::string subRes = executeSubRules(program, newPos, scope, internalState);
     if (subRes.length() == 0)
         return "";
-    if (program[newPos].category != szl::TokenCategory::Punctuation && program[position].content != ";")
-    {
-        return returnWithClear(1, internalState);
-    }
     if (internalState.size() < 1)
         throw szl::SZLException("Assiging empty value to variable '" + name + "'", program[position].file, program[position].line);
     if (internalState.back() != scope.back()[name].getType())
         throw szl::SZLException("Assigning value of type '" + internalState.back() + "' to variable of type '" + scope.back()[name].getType() + "'", program[position].file, program[position].line);
-    position = newPos + 1;
+    position = newPos;
     internalState.pop_back();
 
     if (!scope.back().exists(name))
@@ -797,17 +793,17 @@ void szl::GrammarAddition::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
     addSubRule("division");
     addSubRule("modulo");
     addSubRule("two literals addition");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -863,11 +859,10 @@ void szl::GrammarSubtraction::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -875,6 +870,7 @@ void szl::GrammarSubtraction::initialize()
     addSubRule("modulo");
     addSubRule("two literals addition");
     addSubRule("addition");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -942,13 +938,13 @@ void szl::GrammarMultiplication::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1016,14 +1012,14 @@ void szl::GrammarDivision::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1079,11 +1075,10 @@ void szl::GrammarAnd::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1100,6 +1095,7 @@ void szl::GrammarAnd::initialize()
     addSubRule("less or equal");
     addSubRule("not equal");
     addSubRule("equal");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1158,8 +1154,8 @@ void szl::GrammarOr::initialize()
     addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1233,11 +1229,10 @@ void szl::GrammarXor::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1255,6 +1250,7 @@ void szl::GrammarXor::initialize()
     addSubRule("not equal");
     addSubRule("equal");
     addSubRule("and");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1322,15 +1318,15 @@ void szl::GrammarModulo::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
     addSubRule("division");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1430,8 +1426,8 @@ void szl::GrammarNegation::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1487,11 +1483,10 @@ void szl::GrammarShiftLeft::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1500,6 +1495,7 @@ void szl::GrammarShiftLeft::initialize()
     addSubRule("two literals addition");
     addSubRule("addition");
     addSubRule("subtraction");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1555,11 +1551,10 @@ void szl::GrammarShiftRight::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1569,6 +1564,7 @@ void szl::GrammarShiftRight::initialize()
     addSubRule("addition");
     addSubRule("subtraction");
     addSubRule("shift left");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1626,11 +1622,10 @@ void szl::GrammarNotEqual::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1645,6 +1640,7 @@ void szl::GrammarNotEqual::initialize()
     addSubRule("greater or equal");
     addSubRule("less");
     addSubRule("less or equal");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1702,11 +1698,10 @@ void szl::GrammarEqual::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1722,6 +1717,7 @@ void szl::GrammarEqual::initialize()
     addSubRule("less");
     addSubRule("less or equal");
     addSubRule("not equal");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1793,11 +1789,10 @@ void szl::GrammarGreater::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1808,6 +1803,7 @@ void szl::GrammarGreater::initialize()
     addSubRule("subtraction");
     addSubRule("shift left");
     addSubRule("shift right");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1879,11 +1875,10 @@ void szl::GrammarLess::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1896,6 +1891,7 @@ void szl::GrammarLess::initialize()
     addSubRule("shift right");
     addSubRule("greater");
     addSubRule("greater or equal");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -1967,11 +1963,10 @@ void szl::GrammarGreaterOrEqual::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -1983,6 +1978,7 @@ void szl::GrammarGreaterOrEqual::initialize()
     addSubRule("shift left");
     addSubRule("shift right");
     addSubRule("greater");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -2054,11 +2050,10 @@ void szl::GrammarLessOrEqual::initialize()
     addSubRule("conversion");
     addSubRule("in");
     addSubRule("function call");
-    addSubRule("get member field");
     addSubRule("not");
     addSubRule("negation");
-    addSubRule("at");
     addSubRule("questioned at");
+    addSubRule("at");
     addSubRule("sizeof");
     addSubRule("alloc");
     addSubRule("multiplication");
@@ -2072,6 +2067,7 @@ void szl::GrammarLessOrEqual::initialize()
     addSubRule("greater");
     addSubRule("greater or equal");
     addSubRule("less");
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }
@@ -2277,17 +2273,19 @@ std::string szl::GrammarFor::execute(std::vector<szl::Token> &program, std::size
     auto id = std::to_string(szl::nextUniqueId++);
     std::string res;
     scope.emplace_back(12, &res, &scope.back());
-    res += executeSubRules(program, newPos, scope, internalState) + "@szlCompilerLabelForLoopId" + id + "\n";
+    res += executeSubRules(program, newPos, scope, internalState);
     if (!res.length())
         throw szl::SZLException("For statement syntax error", program[position].file, program[position].line);
-    // if (program[newPos].category != szl::TokenCategory::Punctuation)
-    //     throw szl::SZLException("For statement syntax error");
-    // if (program[newPos].content != ";")
-    //     throw szl::SZLException("For statement syntax error");
-    // position = newPos + 1;
-    position = newPos;
+        res+= + "@szlCompilerLabelForLoopId" + id + "\n";
+    if (program[newPos].category != szl::TokenCategory::Punctuation)
+         throw szl::SZLException("For statement syntax error");
+     if (program[newPos].content != ";")
+        throw szl::SZLException("For statement syntax error");
+     position = newPos + 1;
 
-    res += executeSubRules(program, position, scope, internalState);
+    auto rule=szl::GrammarChainedOperations(root);
+    rule.initialize();
+    res += rule.execute(program, position, scope, internalState);
     if (!res.length())
         throw szl::SZLException("For statement syntax error", program[position].file, program[position].line);
     if (program[position].category != szl::TokenCategory::Punctuation)
@@ -2337,7 +2335,24 @@ szl::GrammarFor::GrammarFor(Grammar *root) : szl::Grammar(root) {}
 
 void szl::GrammarFor::initialize()
 {
-    addSubRule("chained operations");
+    addSubRule("single variable declaration");
+    addSubRule("assembly");
+    addSubRule("lock");
+    addSubRule("unlock");
+    addSubRule("out");
+    addSubRule("function call");
+    addSubRule("arrow");
+    addSubRule("memcpy");
+    addSubRule("free");
+    addSubRule("if");
+    addSubRule("while");
+    addSubRule("for");
+    addSubRule("set member field");
+    addSubRule("object creation");
+    addSubRule("assignment");
+    addSubRule("object declaration");
+    addSubRule("function declaration");
+    addSubRule("single variable declaration");
 }
 
 szl::Function szl::GrammarFunctionDeclaration::createFunctionTableEntry(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
@@ -2365,7 +2380,7 @@ szl::Function szl::GrammarFunctionDeclaration::createFunctionTableEntry(std::vec
     if (program[position++].content != "(")
         throw szl::SZLException("Syntax error while declaring new function", program[position].file, program[position].line);
 
-    while (program[position].category == szl::TokenCategory::Keyword)
+    while (program[position].category == szl::TokenCategory::Keyword || program[position].category == szl::TokenCategory::Identifier)
     {
         auto type = program[position].content;
         if (position++ >= program.size())
@@ -2554,6 +2569,9 @@ std::string szl::GrammarFunctionCall::execute(std::vector<szl::Token> &program, 
         position++;
         res += subRes;
     }
+    if(!expectedArguments.size())
+        position++;
+    internalState.push_back(function.getReturns());
     return res + "CALL " + function.getLabel();
 }
 
@@ -2675,7 +2693,7 @@ void szl::GrammarOut::initialize()
 std::string szl::GrammarAt::execute(std::vector<szl::Token> &program, std::size_t &position, std::list<szl::Scope> &scope, std::vector<std::string> &internalState) const
 {
     std::size_t newPos = position;
-    if (program[newPos].category != szl::TokenCategory::Keyword)
+    if (program[newPos].category != szl::TokenCategory::Keyword && program[newPos].category != szl::TokenCategory::Identifier)
         return "";
     auto type = program[newPos++].content;
 
@@ -2970,7 +2988,8 @@ std::string szl::GrammarGetMemberField::execute(std::vector<szl::Token> &program
         return "";
     auto memberName = program[position = newPos].content;
     if (!object.getContents().count(memberName))
-        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
+        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position ].line);
+    position++;
     auto member = object.getContents()[memberName];
     internalState.push_back(member);
     if (!szl::objectTypes.count(member))
@@ -3137,25 +3156,28 @@ std::string szl::GrammarObjectCreation::execute(std::vector<szl::Token> &program
         throw szl::SZLException("Redeclaration of function '" + name + "'", program[position].file, program[position].line);
     if (newPos >= program.size())
         return "";
-    if (program[newPos].category != szl::TokenCategory::Punctuation)
-        return "";
-    if (program[position = newPos].content == ";")
+    if (program[newPos].category == szl::TokenCategory::Punctuation)
     {
-        position++;
-        auto object = szl::objectTypes[type];
-        scope.back().insertVariable(name, object.getSize(), type);
-        return "LD DE,#" + std::to_string(object.getSize()) + "\nLD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
+        if (program[position = newPos].content == ";")
+        {
+            position++;
+            auto object = szl::objectTypes[type];
+            scope.back().insertVariable(name, object.getSize(), type);
+            return "LD DE,#" + std::to_string(object.getSize()) + "\nLD HL,%0\nADD HL,SP\nOR A\nSBC HL,DE\nLD SP,HL\n";
+        }
+        else
+            return "";
     }
-    if (program[position].category != szl::TokenCategory::Keyword)
-        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
-    if (program[position++].content != "=")
-        throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
-    std::string res = executeSubRules(program, position, scope, internalState);
+    if (program[newPos].category != szl::TokenCategory::Keyword)
+        return "";
+    if (program[newPos++].content != "=")
+        return "";
+    std::string res = executeSubRules(program, position = newPos, scope, internalState);
     if (!res.length())
         throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
-    if (position + 1 >= program.size())
+    if (position >= program.size())
         throw szl::SZLException("Unexpected EOF while creating object", program[position].file, program[position].line);
-    if (program[++position].category != szl::TokenCategory::Punctuation)
+    if (program[position].category != szl::TokenCategory::Punctuation)
         throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
     if (program[position].content != ";")
         throw szl::SZLException("Syntax error while creating object", program[position].file, program[position].line);
@@ -3263,12 +3285,12 @@ void szl::GrammarChainedOperations::initialize()
     addSubRule("negation");
     addSubRule("not");
 
-    addSubRule("get member field");
     addSubRule("function call");
     addSubRule("in");
     addSubRule("conversion");
     addSubRule("brackets");
 
+    addSubRule("get member field");
     addSubRule("identifier");
     addSubRule("literal");
 }

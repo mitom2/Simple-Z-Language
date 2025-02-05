@@ -31,7 +31,7 @@ void listClear(uint list)
     while (!addr)
     {
         ListElement el = ListElement @addr;
-        free(el.value, list.valuesSize);
+        free(el.value, l.valuesSz);
         uint buf = el.next;
         free(addr, sizeof(ListElement));
         addr = buf;
