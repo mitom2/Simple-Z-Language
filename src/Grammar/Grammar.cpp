@@ -2276,14 +2276,14 @@ std::string szl::GrammarFor::execute(std::vector<szl::Token> &program, std::size
     res += executeSubRules(program, newPos, scope, internalState);
     if (!res.length())
         throw szl::SZLException("For statement syntax error", program[position].file, program[position].line);
-        res+= + "@szlCompilerLabelForLoopId" + id + "\n";
+    res += +"@szlCompilerLabelForLoopId" + id + "\n";
     if (program[newPos].category != szl::TokenCategory::Punctuation)
-         throw szl::SZLException("For statement syntax error");
-     if (program[newPos].content != ";")
         throw szl::SZLException("For statement syntax error");
-     position = newPos + 1;
+    if (program[newPos].content != ";")
+        throw szl::SZLException("For statement syntax error");
+    position = newPos + 1;
 
-    auto rule=szl::GrammarChainedOperations(root);
+    auto rule = szl::GrammarChainedOperations(root);
     rule.initialize();
     res += rule.execute(program, position, scope, internalState);
     if (!res.length())
@@ -2569,7 +2569,7 @@ std::string szl::GrammarFunctionCall::execute(std::vector<szl::Token> &program, 
         position++;
         res += subRes;
     }
-    if(!expectedArguments.size())
+    if (!expectedArguments.size())
         position++;
     internalState.push_back(function.getReturns());
     return res + "CALL " + function.getLabel();
@@ -2755,8 +2755,10 @@ std::string szl::GrammarArrow::execute(std::vector<szl::Token> &program, std::si
     // INT/UINT/CHAR/BOOL
     if (internalState.back() == "int" || internalState.back() == "uint" || internalState.back() == "char" || internalState.back() == "bool")
     {
-        return resL + "PUSH HL\n" + res + "POP DE\nLD (HL),E\nDEC HL\nLD (HL),D\n";
+        return resL + "PUSH HL\n" + res + "POP DE\nLD (HL),D\nDEC HL\nLD (HL),E\n";
     }
+
+    // TODO: Add 32-bit.
 
     // OBJECT
     if (szl::objectTypes.count(internalState.back()))
@@ -2988,7 +2990,7 @@ std::string szl::GrammarGetMemberField::execute(std::vector<szl::Token> &program
         return "";
     auto memberName = program[position = newPos].content;
     if (!object.getContents().count(memberName))
-        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position ].line);
+        throw szl::SZLException("Object '" + object.getName() + "' does not have member named '" + memberName + "'", program[position].file, program[position].line);
     position++;
     auto member = object.getContents()[memberName];
     internalState.push_back(member);
